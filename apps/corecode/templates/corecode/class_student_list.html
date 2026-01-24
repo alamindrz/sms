@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ student_class.name }} - Students{% endblock %}
+
+{% block page_title %}{{ student_class.name }} - Students{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:enhanced_classes' %}">Classes</a></li>
+<li class="breadcrumb-item active">{{ student_class.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Class Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3>{{ student_class.name }}</h3>
+                            <p class="text-muted">
+                                Academic Session: {{ student_class.current_session|default:"Not set" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="btn-group">
+                                <a href="{% url 'corecode:enhanced_classes' %}" class="btn btn-default">
+                                    <i class="fas fa-arrow-left"></i> Back to Classes
+                                </a>
+                                <button type="button" class="btn btn-info" onclick="window.print()">
+                                    <i class="fas fa-print"></i> Print List
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ total_count }}</h3>
+                    <p>Total Students</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ active_count }}</h3>
+                    <p>Active Students</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ inactive_count }}</h3>
+                    <p>Inactive Students</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3>{% widthratio active_count total_count 100 %}%</h3>
+                    <p>Activation Rate</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Toggle -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="show-inactive" 
+                               {% if show_inactive %}checked{% endif %}
+                               onchange="toggleInactiveStudents()">
+                        <label class="form-check-label" for="show-inactive">
+                            Show Inactive Students ({{ inactive_count }})
+                        </label>
+                    </div>
+                    <small class="text-muted ml-3">
+                        Inactive students are shown in <span class="text-warning">yellow</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Students Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Student List</h3>
+                    <div class="card-tools">
+                        <div class="input-group input-group-sm" style="width: 200px;">
+                            <input type="text" name="table_search" class="form-control float-right" 
+                                   placeholder="Search students..." id="student-search">
+                            <div class="input-group-append">
+                                <button type="submit" class="btn btn-default">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="students-table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Gender</th>
+                                    <th>Guardian</th>
+                                    <th>Status</th>
+                                    <th>Missing Requirements</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr class="{% if not student.is_activatable %}table-warning{% endif %}">
+                                    <td>
+                                        <strong>{{ student.student_number }}</strong>
+                                    </td>
+                                    <td>{{ student.full_name }}</td>
+                                    <td>{{ student.gender }}</td>
+                                    <td>
+                                        {% if student.guardian %}
+                                        {{ student.guardian.full_name|truncatechars:20 }}
+                                        {% else %}
+                                        <span class="text-danger">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.is_activatable %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% with missing=student.get_activation_requirements %}
+                                        {% if missing %}
+                                        <small>
+                                            {% for req in missing %}
+                                            <span class="badge bg-danger">{{ req }}</span>
+                                            {% endfor %}
+                                        </small>
+                                        {% else %}
+                                        <span class="text-success">All requirements met</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'admissions:student_detail' student.pk %}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not student.is_activatable %}
+                                            <a href="{% url 'admissions:student_activate' student.pk %}" 
+                                               class="btn btn-sm btn-warning">
+                                                <i class="fas fa-bolt"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        No students found in this class
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="float-right">
+                        <small class="text-muted">
+                            Showing {{ students.count }} of {{ total_count }} students
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activation Help -->
+    {% if inactive_count > 0 %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-lightbulb"></i> Quick Activation
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p>To activate inactive students, they need:</p>
+                    <ol>
+                        <li>A guardian/parent assigned</li>
+                        <li>A class assignment</li>
+                        <li>An academic session</li>
+                    </ol>
+                    <a href="{% url 'admissions:activation_wizard' %}?class={{ student_class.id }}" 
+                       class="btn btn-warning">
+                        <i class="fas fa-magic"></i> Use Activation Wizard
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card card-info">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-pie"></i> Activation Statistics
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart">
+                        <canvas id="activationChart" style="min-height: 150px; height: 150px; max-height: 150px; max-width: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle inactive students
+    window.toggleInactiveStudents = function() {
+        const showInactive = document.getElementById('show-inactive').checked;
+        const url = new URL(window.location);
+        url.searchParams.set('show_inactive', showInactive);
+        window.location.href = url.toString();
+    };
+    
+    // Student search
+    const searchInput = document.getElementById('student-search');
+    const tableRows = document.querySelectorAll('#students-table tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+    
+    // Activation chart
+    {% if inactive_count > 0 %}
+    const ctx = document.getElementById('activationChart').getContext('2d');
+    const activationChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Inactive'],
+            datasets: [{
+                data: [{{ active_count }}, {{ inactive_count }}],
+                backgroundColor: ['#28a745', '#ffc107'],
+                hoverBackgroundColor: ['#218838', '#e0a800'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            legend: {
+                position: 'bottom'
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

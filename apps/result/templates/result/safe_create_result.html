@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Result (Safe Mode){% endblock %}
+
+{% block page_title %}Create Result with Safety Checks{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'result:create_result' %}">Results</a></li>
+<li class="breadcrumb-item active">Safe Create</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt"></i> Create Result with Safety Checks
+                    </h3>
+                </div>
+                
+                <form method="post" id="result-form">
+                    {% csrf_token %}
+                    
+                    <div class="card-body">
+                        <!-- Safety Alert -->
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> Safety Mode Active</h5>
+                            <p class="mb-0">
+                                This form only shows active students who meet all requirements for result entry.
+                                Inactive students are automatically filtered out.
+                            </p>
+                        </div>
+                        
+                        <!-- Form Fields -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.student.id_for_label }}">
+                                        {{ form.student.label }}
+                                        <span class="badge bg-success ml-2">
+                                            {{ eligible_count }}/{{ total_students }} active
+                                        </span>
+                                    </label>
+                                    {{ form.student }}
+                                    {% if form.student.help_text %}
+                                    <small class="form-text text-muted">{{ form.student.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.session.id_for_label }}">{{ form.session.label }}</label>
+                                    {{ form.session }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.term.id_for_label }}">{{ form.term.label }}</label>
+                                    {{ form.term }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+                                    {{ form.subject }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.test_score.id_for_label }}">{{ form.test_score.label }}</label>
+                                    {{ form.test_score }}
+                                    {% if form.test_score.help_text %}
+                                    <small class="form-text text-muted">{{ form.test_score.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.exam_score.id_for_label }}">{{ form.exam_score.label }}</label>
+                                    {{ form.exam_score }}
+                                    {% if form.exam_score.help_text %}
+                                    <small class="form-text text-muted">{{ form.exam_score.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Student Info Preview -->
+                        <div class="card card-secondary mt-3" id="student-preview" style="display: none;">
+                            <div class="card-header">
+                                <h3 class="card-title">Student Preview</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="preview-content">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Validation Errors -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mt-3">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Validation Error</h5>
+                            {% for error in form.non_field_errors %}
+                            <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Result
+                        </button>
+                        <a href="{% url 'result:create_result' %}" class="btn btn-default">
+                            Back to Standard Mode
+                        </a>
+                        <button type="button" id="validate-btn" class="btn btn-info float-right">
+                            <i class="fas fa-check-circle"></i> Validate Student
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Panel -->
+        <div class="col-md-4">
+            <div class="card card-info">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-question-circle"></i> Help & Requirements</h3>
+                </div>
+                <div class="card-body">
+                    <h5>Student Requirements for Results:</h5>
+                    <ul>
+                        <li>Must have a guardian/parent assigned</li>
+                        <li>Must be assigned to a class</li>
+                        <li>Must be enrolled in an academic session</li>
+                        <li>Status must be "Active"</li>
+                    </ul>
+                    
+                    <h5>Common Issues:</h5>
+                    <ul>
+                        <li>Student missing guardian</li>
+                        <li>Student not assigned to current session</li>
+                        <li>Student status is "Inactive"</li>
+                    </ul>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'admissions:inactive_students' %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-cog"></i> Fix Inactive Students
+                        </a>
+                        <a href="{% url 'result:validation' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-check-double"></i> Bulk Validation
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card card-success mt-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-bar"></i> Quick Stats</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="info-box bg-light">
+                                <span class="info-box-icon bg-success"><i class="fas fa-check"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Active</span>
+                                    <span class="info-box-number">{{ eligible_count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-box bg-light">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Inactive</span>
+                                    <span class="info-box-number">{{ total_students|add:"-eligible_count" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    const sessionSelect = document.getElementById('{{ form.session.id_for_label }}');
+    const termSelect = document.getElementById('{{ form.term.id_for_label }}');
+    const validateBtn = document.getElementById('validate-btn');
+    const studentPreview = document.getElementById('student-preview');
+    const previewContent = document.getElementById('preview-content');
+    const form = document.getElementById('result-form');
+    
+    // Validate student eligibility
+    validateBtn.addEventListener('click', function() {
+        const studentId = studentSelect.value;
+        const sessionId = sessionSelect.value;
+        const termId = termSelect.value;
+        
+        if (!studentId) {
+            alert('Please select a student first');
+            return;
+        }
+        
+        // Show loading
+        previewContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Validating...</div>';
+        studentPreview.style.display = 'block';
+        
+        // Make AJAX request
+        fetch('{% url "result:check_eligibility" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: new URLSearchParams({
+                'student_id': studentId,
+                'session_id': sessionId,
+                'term_id': termId,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                previewContent.innerHTML = `
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-check-circle"></i> Student Eligible</h5>
+                        <p><strong>Name:</strong> ${data.student.name}</p>
+                        <p><strong>Student ID:</strong> ${data.student.number}</p>
+                        <p><strong>Class:</strong> ${data.student.class}</p>
+                        <p class="mb-0"><strong>Status:</strong> <span class="badge bg-success">Ready for Results</span></p>
+                    </div>
+                `;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Student Not Eligible</h5>
+                        <p class="mb-0">${data.error}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            previewContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Validation Error</h5>
+                    <p class="mb-0">Failed to validate student: ${error}</p>
+                </div>
+            `;
+        });
+    });
+    
+    // Show preview when student is selected
+    studentSelect.addEventListener('change', function() {
+        if (this.value) {
+            studentPreview.style.display = 'block';
+            validateBtn.click(); // Trigger validation
+        } else {
+            studentPreview.style.display = 'none';
+        }
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        // Add any additional validation here
+        const studentId = studentSelect.value;
+        
+        if (!studentId) {
+            e.preventDefault();
+            alert('Please select a student');
+            return;
+        }
+    });
+    
+    // Utility function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

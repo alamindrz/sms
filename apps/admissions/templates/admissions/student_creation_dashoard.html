@@ -1,0 +1,65 @@
+<!-- Update the Quick Actions section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card card-primary">
+                            <div class="card-body text-center">
+                                <h5><i class="fas fa-user-plus fa-2x"></i></h5>
+                                <h5>Enhanced Create</h5>
+                                <p>Detailed form with validation</p>
+                                <a href="{% url 'admissions:enhanced_manual_create' %}" class="btn btn-primary">
+                                    Create Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="card card-success">
+                            <div class="card-body text-center">
+                                <h5><i class="fas fa-bolt fa-2x"></i></h5>
+                                <h5>Quick Create</h5>
+                                <p>Multiple students at once</p>
+                                <a href="{% url 'admissions:quick_student_create' %}" class="btn btn-success">
+                                    Quick Create
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="card card-warning">
+                            <div class="card-body text-center">
+                                <h5><i class="fas fa-list fa-2x"></i></h5>
+                                <h5>Inactive Students</h5>
+                                <p>View and activate</p>
+                                <a href="{% url 'admissions:inactive_students' %}" class="btn btn-warning">
+                                    View {{ pending_activation }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="card card-info">
+                            <div class="card-body text-center">
+                                <h5><i class="fas fa-magic fa-2x"></i></h5>
+                                <h5>Activation Wizard</h5>
+                                <p>Bulk activation helper</p>
+                                <a href="{% url 'admissions:activation_wizard' %}" class="btn btn-info">
+                                    Start Wizard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

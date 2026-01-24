@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Classes{% endblock %}
+
+{% block page_title %}Classes{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item active">Classes</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ total_students }}</h3>
+                    <p>Total Students</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ active_students }}</h3>
+                    <p>Active Students</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ inactive_students }}</h3>
+                    <p>Inactive Students</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3>{{ class_data|length }}</h3>
+                    <p>Classes</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Classes Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Classes & Student Distribution</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'corecode:classes' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-list"></i> Basic View
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Class Name</th>
+                                    <th>Total Students</th>
+                                    <th>Active Students</th>
+                                    <th>Inactive Students</th>
+                                    <th>Activation Rate</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in class_data %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ data.class.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ data.total_students }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ data.active_students }}</span>
+                                    </td>
+                                    <td>
+                                        {% if data.inactive_students > 0 %}
+                                        <span class="badge bg-warning" data-toggle="tooltip" 
+                                              title="{% for student in data.inactive_list %}{{ student.full_name }} ({{ student.student_number }})&#10;{% endfor %}">
+                                            {{ data.inactive_students }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress progress-sm">
+                                            {% if data.total_students > 0 %}
+                                            {% widthratio data.active_students data.total_students 100 as activation_rate %}
+                                            <div class="progress-bar bg-success" 
+                                                 style="width: {{ activation_rate }}%"
+                                                 role="progressbar">
+                                                {{ activation_rate }}%
+                                            </div>
+                                            {% else %}
+                                            <div class="progress-bar bg-secondary" style="width: 100%">
+                                                N/A
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'corecode:class_student_list' data.class.id %}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-list"></i> View Students
+                                        </a>
+                                        {% if data.inactive_students > 0 %}
+                                        <a href="{% url 'admissions:inactive_students' %}?class={{ data.class.id }}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> Fix Inactive
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        No classes found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inactive Students Summary -->
+    {% if inactive_students > 0 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Inactive Students Requiring Attention
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p>
+                        There are <strong>{{ inactive_students }}</strong> inactive students in the system.
+                        Inactive students cannot:
+                    </p>
+                    <ul>
+                        <li>Appear in class lists for attendance</li>
+                        <li>Receive academic results</li>
+                        <li>Be promoted to next classes</li>
+                        <li>Generate school fees</li>
+                    </ul>
+                    <a href="{% url 'admissions:inactive_students' %}" class="btn btn-warning">
+                        <i class="fas fa-cog"></i> Manage Inactive Students
+                    </a>
+                    <a href="{% url 'admissions:activation_wizard' %}" class="btn btn-success">
+                        <i class="fas fa-magic"></i> Use Activation Wizard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-toggle="tooltip"]');
+    tooltips.forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
+{% endblock %}

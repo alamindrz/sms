@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}School Management System{% endblock %}</title>
+  
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- AdminLTE 3 with Bootstrap 4 compatibility -->
+  <link href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Alpine.js for reactive components -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js"></script>
+  
+  <!-- DataTables -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+  
+  {% block extra_css %}{% endblock %}
+  
+  <style>
+    /* Fix for Bootstrap 5 + AdminLTE 3 compatibility */
+    .navbar-nav .nav-link {
+      padding-right: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    
+    .sidebar {
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 1030;
+    }
+    
+    @media (max-width: 767.98px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: -250px;
+        height: 100vh;
+        z-index: 1030;
+        transition: left 0.3s ease;
+      }
+      
+      .sidebar.show {
+        left: 0;
+      }
+      
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1029;
+      }
+      
+      .sidebar-overlay.show {
+        display: block;
+      }
+      
+      .content-wrapper {
+        margin-left: 0 !important;
+      }
+    }
+    
+    /* Fix for main header on mobile */
+    .main-header {
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+    }
+    
+    /* Fix for content wrapper */
+    .content-wrapper {
+      min-height: calc(100vh - 3.5rem);
+      margin-left: 250px;
+      transition: margin-left 0.3s ease;
+    }
+    
+    @media (max-width: 767.98px) {
+      .content-wrapper {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand-md navbar-white navbar-light border-bottom">
+    <!-- Left navbar links -->
+    <div class="container-fluid">
+      <button class="navbar-toggler order-1" type="button" id="sidebarToggle">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <a href="{% url 'index' %}" class="navbar-brand ml-2">
+        <img src="{% static 'dist/img/logo.png' %}" alt="School Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+        <span class="brand-text font-weight-light">School SMS</span>
+      </a>
+      
+      <!-- Right navbar links -->
+      <ul class="navbar-nav ml-auto order-3">
+        {% if user.is_authenticated %}
+        <li class="nav-item dropdown">
+          <a class="nav-link" data-toggle="dropdown" href="#">
+            <i class="fas fa-user"></i>
+            {% if user.get_full_name %}
+              {{ user.get_full_name|truncatechars:20 }}
+            {% else %}
+              {{ user.username|truncatechars:20 }}
+            {% endif %}
+          </a>
+          <div class="dropdown-menu dropdown-menu-right">
+            {% if user.guardian_profile %}
+            <a href="{% url 'parent:profile' %}" class="dropdown-item">
+              <i class="fas fa-user mr-2"></i> Profile
+            </a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'logout' %}" class="dropdown-item">
+              <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+          </div>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a href="{% url 'login' %}" class="nav-link">Login</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Sidebar Overlay (Mobile only) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main Sidebar Container -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4" id="mainSidebar">
+    <!-- Brand Logo -->
+    <div class="brand-link text-center py-3 border-bottom">
+      <span class="brand-text font-weight-light">Navigation</span>
+      <button class="close-sidebar d-md-none" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: white; font-size: 1.5rem;">
+        &times;
+      </button>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar user panel -->
+      <div class="user-panel mt-3 pb-3 mb-3 d-flex border-bottom">
+        <div class="image">
+          {% if user.is_authenticated %}
+          <div class="img-circle elevation-2 bg-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="fas fa-user text-white"></i>
+          </div>
+          {% endif %}
+        </div>
+        <div class="info">
+          {% if user.is_authenticated %}
+          <a href="#" class="d-block">
+            {% if user.get_full_name %}
+              {{ user.get_full_name|truncatechars:20 }}
+            {% else %}
+              {{ user.username|truncatechars:20 }}
+            {% endif %}
+          </a>
+          <small class="text-muted">
+            {% if user.guardian_profile %}
+              Parent/Guardian
+            {% elif user.is_staff %}
+              Staff
+            {% endif %}
+          </small>
+          {% else %}
+          <a href="{% url 'login' %}" class="d-block">Please login</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Sidebar Menu -->
+      {% load navigation %}
+      {% get_user_role as user_role %}
+      
+      {% if user_role == 'admin' %}
+        {% admin_navigation %}
+      {% elif user_role == 'parent' %}
+        {% parent_navigation %}
+      {% else %}
+        <!-- Public/Login navigation -->
+        <nav class="mt-2">
+          <ul class="nav nav-pills nav-sidebar flex-column">
+            <li class="nav-item">
+              <a href="{% url 'login' %}" class="nav-link">
+                <i class="nav-icon fas fa-sign-in-alt"></i>
+                <p>Login</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{% url 'admissions:application_create' %}" class="nav-link">
+                <i class="nav-icon fas fa-file-alt"></i>
+                <p>Apply for Admission</p>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- Content Wrapper -->
+  <div class="content-wrapper" id="contentWrapper">
+    <!-- Content Header -->
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0">{% block page_title %}{% endblock %}</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+              {% block breadcrumbs %}{% endblock %}
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+      </div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="main-footer">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-6">
+          <strong>Copyright &copy; {% now "Y" %} School Management System.</strong>
+          All rights reserved.
+        </div>
+        <div class="col-md-6 text-right">
+          <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 1.0.0
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- jQuery (required by AdminLTE) -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<!-- Bootstrap 5 Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<!-- DataTables -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- Custom Vanilla JS -->
+<script src="{{ STATIC_URL }}dist/js/custom.js"></script>
+
+<script>
+// Fix for sidebar toggle on mobile
+document.addEventListener('DOMContentLoaded', function() {
+  const sidebar = document.getElementById('mainSidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const closeSidebar = document.querySelector('.close-sidebar');
+  const contentWrapper = document.getElementById('contentWrapper');
+  
+  // Toggle sidebar on button click
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', function() {
+      sidebar.classList.toggle('show');
+      sidebarOverlay.classList.toggle('show');
+    });
+  }
+  
+  // Close sidebar on overlay click
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', function() {
+      sidebar.classList.remove('show');
+      sidebarOverlay.classList.remove('show');
+    });
+  }
+  
+  // Close sidebar on close button click
+  if (closeSidebar) {
+    closeSidebar.addEventListener('click', function() {
+      sidebar.classList.remove('show');
+      sidebarOverlay.classList.remove('show');
+    });
+  }
+  
+  // Close sidebar when clicking on a link (mobile only)
+  if (window.innerWidth < 768) {
+    const sidebarLinks = document.querySelectorAll('.main-sidebar .nav-link');
+    sidebarLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        sidebar.classList.remove('show');
+        sidebarOverlay.classList.remove('show');
+      });
+    });
+  }
+  
+  // AdminLTE treeview initialization
+  if (typeof $.fn.tree !== 'undefined') {
+    $('[data-widget="treeview"]').tree();
+  }
+});
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

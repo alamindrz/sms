@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Apply for Admission{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Admission Application Form</h3>
+                </div>
+                
+                <div class="card-body">
+                    {% if not admissions_open %}
+                    <div class="alert alert-warning">
+                        <h5><i class="icon fa fa-exclamation-triangle"></i> Admissions Closed</h5>
+                        Admissions are currently closed. Please check back later.
+                    </div>
+                    {% else %}
+                    
+                    <div class="alert alert-info">
+                        <h5><i class="icon fa fa-info-circle"></i> Important Information</h5>
+                        <ul>
+                            <li>All fields marked with * are required</li>
+                            <li>Ensure all information is accurate</li>
+                            <li>You will receive an application number upon submission</li>
+                            <li>Payment instructions will be sent to your email</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Guardian Information -->
+                        <div class="card card-secondary">
+                            <div class="card-header">
+                                <h4 class="card-title">Guardian/Parent Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in form %}
+                                        {% if 'guardian' in field.name %}
+                                        <div class="form-group col-md-6">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">{{ field.errors }}</div>
+                                            {% endif %}
+                                            {% if field.help_text %}
+                                                <small class="form-text text-muted">{{ field.help_text }}</small>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Student Information -->
+                        <div class="card card-secondary mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title">Student Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in form %}
+                                        {% if 'guardian' not in field.name and 'previous' not in field.name and 'medical' not in field.name and 'doctor' not in field.name and 'photo' not in field.name %}
+                                        <div class="form-group col-md-6">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">{{ field.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Previous School Information -->
+                        <div class="card card-secondary mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title">Previous School Information (if applicable)</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in form %}
+                                        {% if 'previous' in field.name %}
+                                        <div class="form-group col-md-6">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">{{ field.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Medical Information -->
+                        <div class="card card-secondary mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title">Medical Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in form %}
+                                        {% if 'medical' in field.name or 'doctor' in field.name %}
+                                        <div class="form-group col-md-6">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">{{ field.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Photo Uploads -->
+                        <div class="card card-secondary mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title">Photo Uploads</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for field in form %}
+                                        {% if 'photo' in field.name %}
+                                        <div class="form-group col-md-6">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <div class="text-danger">{{ field.errors }}</div>
+                                            {% endif %}
+                                            {% if field.help_text %}
+                                                <small class="form-text text-muted">{{ field.help_text }}</small>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa fa-paper-plane"></i> Submit Application
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-default">Cancel</a>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

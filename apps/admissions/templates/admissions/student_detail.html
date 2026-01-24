@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Details - {{ student.student_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Student Details</h1>
+        </div>
+    </div>
+    
+    <!-- Student Information Card -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card card-primary">
+                <div class="card-body text-center">
+                    {% if student.passport %}
+                    <img src="{{ student.passport.url }}" alt="Passport" class="img-fluid rounded-circle" style="width: 150px; height: 150px;">
+                    {% else %}
+                    <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                        <i class="fas fa-user fa-4x text-white"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <h3 class="mt-3">{{ student.full_name }}</h3>
+                    <h4 class="text-muted">{{ student.student_number }}</h4>
+                    
+                    <div class="mt-3">
+                        <span class="badge bg-{% if student.status == 'active' %}success{% else %}warning{% endif %} fs-6">
+                            {{ student.get_status_display }}
+                        </span>
+                        <span class="badge bg-info fs-6">
+                            {{ student.get_created_via_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title">Actions</h3>
+                </div>
+                <div class="card-body">
+                    {% if student.status == 'inactive' %}
+                    <a href="{% url 'admissions:student_activate' student.pk %}" class="btn btn-success btn-block mb-2">
+                        <i class="fas fa-bolt"></i> Activate Student
+                    </a>
+                    {% endif %}
+                    
+                    {% if student.admission_application %}
+                    <a href="{% url 'admissions:application_detail' student.admission_application.pk %}" class="btn btn-info btn-block mb-2">
+                        <i class="fas fa-file-alt"></i> View Application
+                    </a>
+                    {% endif %}
+                    
+                    {% if student.guardian %}
+                    <a href="#" class="btn btn-primary btn-block mb-2">
+                        <i class="fas fa-users"></i> View Guardian
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Details -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Student Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Date of Birth:</th>
+                                    <td>{{ student.date_of_birth }} (Age: {{ student.age }})</td>
+                                </tr>
+                                <tr>
+                                    <th>Gender:</th>
+                                    <td>{{ student.gender }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email:</th>
+                                    <td>{{ student.email|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone:</th>
+                                    <td>{{ student.mobile_number|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>{{ student.address|default:"Not provided"|linebreaks }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Current Class:</th>
+                                    <td>{{ student.current_class|default:"Not assigned" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Academic Session:</th>
+                                    <td>{{ student.current_session|default:"Not assigned" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Admission Date:</th>
+                                    <td>{{ student.admission_date|default:"Not set" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created Via:</th>
+                                    <td>{{ student.get_created_via_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created On:</th>
+                                    <td>{{ student.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Medical Information -->
+                    {% if student.medical_conditions or student.allergies %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h5>Medical Information</h5>
+                            <div class="card card-secondary">
+                                <div class="card-body">
+                                    {% if student.medical_conditions %}
+                                    <p><strong>Medical Conditions:</strong> {{ student.medical_conditions }}</p>
+                                    {% endif %}
+                                    {% if student.allergies %}
+                                    <p><strong>Allergies:</strong> {{ student.allergies }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Guardian Information -->
+            {% if student.guardian %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title">Guardian Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Name:</th>
+                                    <td>{{ student.guardian.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Relationship:</th>
+                                    <td>{{ student.guardian.relationship }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email:</th>
+                                    <td>{{ student.guardian.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone:</th>
+                                    <td>{{ student.guardian.phone }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>{{ student.guardian.address|linebreaks }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Occupation:</th>
+                                    <td>{{ student.guardian.occupation|default:"Not provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Account Created:</th>
+                                    <td>
+                                        {% if student.guardian.user %}
+                                        <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mt-3">
+                <h5><i class="icon fas fa-exclamation-triangle"></i> No Guardian Assigned</h5>
+                <p>This student needs a guardian to be activated. Please assign a guardian.</p>
+            </div>
+            {% endif %}
+            
+            <!-- Activation Requirements -->
+            {% if student.status == 'inactive' %}
+            <div class="card card-warning mt-3">
+                <div class="card-header">
+                    <h3 class="card-title">Activation Requirements</h3>
+                </div>
+                <div class="card-body">
+                    <p>To activate this student, the following requirements must be met:</p>
+                    <ul>
+                        {% for req in student.get_activation_requirements %}
+                        <li>{{ req }}</li>
+                        {% empty %}
+                        <li>All requirements are met. Student can be activated.</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    {% if student.is_activatable %}
+                    <a href="{% url 'admissions:student_activate' student.pk %}" class="btn btn-success">
+                        <i class="fas fa-bolt"></i> Activate Now
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

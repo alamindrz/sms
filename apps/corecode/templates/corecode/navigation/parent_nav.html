@@ -1,0 +1,13 @@
+<nav class="mt-2">
+    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        {% for item in nav_items %}
+        <li class="nav-item">
+            <a href="{% url item.url %}" 
+               class="nav-link {% if request.resolver_match.url_name == item.url %}active{% endif %}">
+                <i class="nav-icon {{ item.icon }}"></i>
+                <p>{{ item.title }}</p>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>

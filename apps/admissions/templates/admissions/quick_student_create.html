@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'admissions:student_creation_dashboard' %}">Student Creation</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .monospace {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+    
+    .example-box {
+        background: #f8f9fa;
+        border-left: 4px solid #17a2b8;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .counter {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        background: #6c757d;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 0.8em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-bolt"></i> {{ title }}
+                    </h3>
+                </div>
+                
+                <form method="post" id="quick-form">
+                    {% csrf_token %}
+                    
+                    <div class="card-body">
+                        <!-- Instructions -->
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> Instructions</h5>
+                            <p>Enter multiple students at once, one per line. Fields should be separated by commas.</p>
+                            <p class="mb-0"><strong>Format:</strong> Surname, Firstname, Other Names (optional), Gender, Date of Birth (YYYY-MM-DD), Class</p>
+                        </div>
+                        
+                        <!-- Student Data -->
+                        <div class="form-group">
+                            <label for="{{ form.students_data.id_for_label }}">
+                                {{ form.students_data.label }}
+                                <span class="counter" id="line-counter">0 lines</span>
+                            </label>
+                            {{ form.students_data }}
+                            {% if form.students_data.errors %}
+                            <div class="text-danger">
+                                {% for error in form.students_data.errors %}
+                                <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if form.students_data.help_text %}
+                            <small class="form-text text-muted">{{ form.students_data.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Example -->
+                        <div class="example-box">
+                            <h6>Example:</h6>
+                            <pre class="monospace mb-0">{{ sample_data }}</pre>
+                        </div>
+                        
+                        <!-- Common Settings -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.common_guardian.id_for_label }}">
+                                        {{ form.common_guardian.label }}
+                                    </label>
+                                    {{ form.common_guardian }}
+                                    {% if form.common_guardian.help_text %}
+                                    <small class="form-text text-muted">{{ form.common_guardian.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.current_session.id_for_label }}">
+                                        {{ form.current_session.label }}
+                                    </label>
+                                    {{ form.current_session }}
+                                    {% if current_session %}
+                                    <small class="text-muted">Current session: {{ current_session.name }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview -->
+                        <div class="card card-secondary mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-eye"></i> Preview
+                                    <small id="preview-count">(0 students)</small>
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm" id="preview-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Surname</th>
+                                                <th>First Name</th>
+                                                <th>Other Name</th>
+                                                <th>Gender</th>
+                                                <th>Date of Birth</th>
+                                                <th>Class</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="preview-body">
+                                            <!-- Preview will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-check-double"></i> Create Students
+                        </button>
+                        <a href="{% url 'admissions:student_creation_dashboard' %}" class="btn btn-default">
+                            Cancel
+                        </a>
+                        <button type="button" id="preview-btn" class="btn btn-info float-right">
+                            <i class="fas fa-sync"></i> Update Preview
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentsData = document.getElementById('{{ form.students_data.id_for_label }}');
+    const lineCounter = document.getElementById('line-counter');
+    const previewBtn = document.getElementById('preview-btn');
+    const previewBody = document.getElementById('preview-body');
+    const previewCount = document.getElementById('preview-count');
+    
+    // Count lines
+    function updateLineCount() {
+        const lines = studentsData.value.split('\n').filter(line => line.trim() !== '');
+        lineCounter.textContent = `${lines.length} lines`;
+    }
+    
+    // Parse and preview
+    function updatePreview() {
+        const lines = studentsData.value.split('\n').filter(line => line.trim() !== '');
+        let validCount = 0;
+        
+        // Clear previous preview
+        previewBody.innerHTML = '';
+        
+        lines.forEach((line, index) => {
+            const parts = line.split(',').map(part => part.trim());
+            
+            if (parts.length >= 5) {
+                const row = document.createElement('tr');
+                
+                // Add data
+                row.innerHTML = `
+                    <td>${parts[0] || ''}</td>
+                    <td>${parts[1] || ''}</td>
+                    <td>${parts[2] || ''}</td>
+                    <td>${parts[3] || ''}</td>
+                    <td>${parts[4] || ''}</td>
+                    <td>${parts[5] || ''}</td>
+                `;
+                
+                // Validate
+                const isValid = parts[0] && parts[1] && parts[3] && parts[4];
+                if (isValid) {
+                    validCount++;
+                } else {
+                    row.style.backgroundColor = '#ffe6e6';
+                }
+                
+                previewBody.appendChild(row);
+            }
+        });
+        
+        previewCount.textContent = `(${validCount} valid students)`;
+    }
+    
+    // Event listeners
+    studentsData.addEventListener('input', updateLineCount);
+    previewBtn.addEventListener('click', updatePreview);
+    
+    // Initial update
+    updateLineCount();
+    updatePreview();
+    
+    // Auto-preview on input (debounced)
+    let previewTimeout;
+    studentsData.addEventListener('input', function() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updatePreview, 1000);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'admissions:student_creation_dashboard' %}">Student Creation</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .form-section h4 {
+        color: #007bff;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    .guardian-fields {
+        transition: all 0.3s ease;
+    }
+    
+    .monospace {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-plus"></i> {{ title }}
+                    </h3>
+                </div>
+                
+                <form method="post" enctype="multipart/form-data" id="student-form">
+                    {% csrf_token %}
+                    
+                    <div class="card-body">
+                        <!-- Student Basic Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-user-circle mr-2"></i> Student Basic Information</h4>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.surname.id_for_label }}" class="required-field">
+                                            {{ form.surname.label }}
+                                        </label>
+                                        {{ form.surname }}
+                                        {% if form.surname.errors %}
+                                        <div class="text-danger">{{ form.surname.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.firstname.id_for_label }}" class="required-field">
+                                            {{ form.firstname.label }}
+                                        </label>
+                                        {{ form.firstname }}
+                                        {% if form.firstname.errors %}
+                                        <div class="text-danger">{{ form.firstname.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.other_name.id_for_label }}">
+                                            {{ form.other_name.label }}
+                                        </label>
+                                        {{ form.other_name }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.gender.id_for_label }}" class="required-field">
+                                            {{ form.gender.label }}
+                                        </label>
+                                        {{ form.gender }}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.date_of_birth.id_for_label }}" class="required-field">
+                                            {{ form.date_of_birth.label }}
+                                        </label>
+                                        {{ form.date_of_birth }}
+                                        {% if form.date_of_birth.errors %}
+                                        <div class="text-danger">{{ form.date_of_birth.errors }}</div>
+                                        {% endif %}
+                                        <small class="text-muted">Format: YYYY-MM-DD</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.passport.id_for_label }}">
+                                            {{ form.passport.label }}
+                                        </label>
+                                        {{ form.passport }}
+                                        {% if form.passport.help_text %}
+                                        <small class="form-text text-muted">{{ form.passport.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-address-book mr-2"></i> Contact Information</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.email.id_for_label }}">
+                                            {{ form.email.label }}
+                                        </label>
+                                        {{ form.email }}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.mobile_number.id_for_label }}">
+                                            {{ form.mobile_number.label }}
+                                        </label>
+                                        {{ form.mobile_number }}
+                                        {% if form.mobile_number.errors %}
+                                        <div class="text-danger">{{ form.mobile_number.errors }}</div>
+                                        {% endif %}
+                                        <small class="text-muted">e.g., 08012345678</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.address.id_for_label }}">
+                                    {{ form.address.label }}
+                                </label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+                        
+                        <!-- Academic Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-graduation-cap mr-2"></i> Academic Information</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.current_class.id_for_label }}">
+                                            {{ form.current_class.label }}
+                                        </label>
+                                        {{ form.current_class }}
+                                        <small class="text-muted">Required for activation</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.current_session.id_for_label }}">
+                                            {{ form.current_session.label }}
+                                        </label>
+                                        {{ form.current_session }}
+                                        <small class="text-muted">Required for activation</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.auto_assign_class }}
+                                <label for="{{ form.auto_assign_class.id_for_label }}" class="form-check-label">
+                                    {{ form.auto_assign_class.label }}
+                                </label>
+                                <small class="form-text text-muted d-block">{{ form.auto_assign_class.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Medical Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-heartbeat mr-2"></i> Medical Information (Optional)</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.medical_conditions.id_for_label }}">
+                                            {{ form.medical_conditions.label }}
+                                        </label>
+                                        {{ form.medical_conditions }}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.allergies.id_for_label }}">
+                                            {{ form.allergies.label }}
+                                        </label>
+                                        {{ form.allergies }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Guardian Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-users mr-2"></i> Guardian Information</h4>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.include_guardian }}
+                                <label for="{{ form.include_guardian.id_for_label }}" class="form-check-label">
+                                    {{ form.include_guardian.label }}
+                                </label>
+                                <small class="form-text text-muted d-block">{{ form.include_guardian.help_text }}</small>
+                            </div>
+                            
+                            <!-- Existing Guardian Selection -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.existing_guardian.id_for_label }}">
+                                            {{ form.existing_guardian.label }}
+                                        </label>
+                                        {{ form.existing_guardian }}
+                                        {% if form.existing_guardian.help_text %}
+                                        <small class="form-text text-muted">{{ form.existing_guardian.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- New Guardian Fields -->
+                            <div id="new-guardian-fields" class="guardian-fields">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Fill in guardian details below, or select existing guardian above.
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.guardian_surname.id_for_label }}" class="required-field">
+                                                {{ form.guardian_surname.label }}
+                                            </label>
+                                            {{ form.guardian_surname }}
+                                            {% if form.guardian_surname.errors %}
+                                            <div class="text-danger">{{ form.guardian_surname.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.guardian_firstname.id_for_label }}" class="required-field">
+                                                {{ form.guardian_firstname.label }}
+                                            </label>
+                                            {{ form.guardian_firstname }}
+                                            {% if form.guardian_firstname.errors %}
+                                            <div class="text-danger">{{ form.guardian_firstname.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.guardian_email.id_for_label }}" class="required-field">
+                                                {{ form.guardian_email.label }}
+                                            </label>
+                                            {{ form.guardian_email }}
+                                            {% if form.guardian_email.errors %}
+                                            <div class="text-danger">{{ form.guardian_email.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.guardian_phone.id_for_label }}" class="required-field">
+                                                {{ form.guardian_phone.label }}
+                                            </label>
+                                            {{ form.guardian_phone }}
+                                            {% if form.guardian_phone.errors %}
+                                            <div class="text-danger">{{ form.guardian_phone.errors }}</div>
+                                            {% endif %}
+                                            <small class="text-muted">e.g., 08012345678</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.guardian_relationship.id_for_label }}">
+                                                {{ form.guardian_relationship.label }}
+                                            </label>
+                                            {{ form.guardian_relationship }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.guardian_address.id_for_label }}">
+                                                {{ form.guardian_address.label }}
+                                            </label>
+                                            {{ form.guardian_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Create Student
+                        </button>
+                        <a href="{% url 'admissions:student_creation_dashboard' %}" class="btn btn-default">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Quick Tips -->
+            <div class="card card-info mt-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-lightbulb"></i> Quick Tips</h3>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Students created manually start as <span class="badge bg-warning">INACTIVE</span></li>
+                        <li>To activate a student, they need: Guardian + Class + Academic Session</li>
+                        <li>Use existing guardian when possible to avoid duplicate records</li>
+                        <li>Check the "Auto-assign to current session" box for current academic year</li>
+                        <li>For multiple students, use <a href="{% url 'admissions:quick_student_create' %}">Quick Creation</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const includeGuardianCheckbox = document.getElementById('{{ form.include_guardian.id_for_label }}');
+    const existingGuardianSelect = document.getElementById('{{ form.existing_guardian.id_for_label }}');
+    const newGuardianFields = document.getElementById('new-guardian-fields');
+    const guardianFields = document.querySelectorAll('.guardian-field');
+    const autoAssignCheckbox = document.getElementById('{{ form.auto_assign_class.id_for_label }}');
+    const sessionSelect = document.getElementById('{{ form.current_session.id_for_label }}');
+    
+    // Toggle guardian fields
+    function toggleGuardianFields() {
+        const includeGuardian = includeGuardianCheckbox.checked;
+        const hasExistingGuardian = existingGuardianSelect.value !== '';
+        
+        if (includeGuardian && !hasExistingGuardian) {
+            newGuardianFields.style.display = 'block';
+            guardianFields.forEach(field => field.disabled = false);
+        } else {
+            newGuardianFields.style.display = 'none';
+            guardianFields.forEach(field => field.disabled = true);
+        }
+    }
+    
+    // Handle existing guardian selection
+    existingGuardianSelect.addEventListener('change', function() {
+        toggleGuardianFields();
+    });
+    
+    // Handle include guardian checkbox
+    includeGuardianCheckbox.addEventListener('change', toggleGuardianFields);
+    
+    // Auto-assign session
+    autoAssignCheckbox.addEventListener('change', function() {
+        if (this.checked && '{{ current_session.id }}') {
+            sessionSelect.value = '{{ current_session.id }}';
+            sessionSelect.disabled = true;
+        } else {
+            sessionSelect.disabled = false;
+        }
+    });
+    
+    // Initial state
+    toggleGuardianFields();
+    if (autoAssignCheckbox.checked && '{{ current_session.id }}') {
+        sessionSelect.value = '{{ current_session.id }}';
+        sessionSelect.disabled = true;
+    }
+    
+    // Form validation
+    const form = document.getElementById('student-form');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('.required-field');
+        
+        requiredFields.forEach(label => {
+            const fieldId = label.getAttribute('for');
+            const field = document.getElementById(fieldId);
+            
+            if (field && !field.disabled && !field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else if (field) {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
+{% endblock %}

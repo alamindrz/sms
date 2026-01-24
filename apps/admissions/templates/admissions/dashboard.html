@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admissions Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Admissions Dashboard</h1>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-3 col-sm-6">
+            <div class="info-box bg-info">
+                <span class="info-box-icon"><i class="fas fa-file-alt"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Applications</span>
+                    <span class="info-box-number">{{ total_applications }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <div class="info-box bg-warning">
+                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Needs Review</span>
+                    <span class="info-box-number">{{ needs_review }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <div class="info-box bg-danger">
+                <span class="info-box-icon"><i class="fas fa-gavel"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Needs Decision</span>
+                    <span class="info-box-number">{{ needs_decision }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6">
+            <div class="info-box bg-success">
+                <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Payments Verified</span>
+                    <span class="info-box-number">{{ payment_stats.verified }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'admissions:application_list' %}" class="btn btn-primary">
+                        <i class="fas fa-list"></i> View All Applications
+                    </a>
+                    <a href="{% url 'admissions:bulk_verify_payments' %}" class="btn btn-warning">
+                        <i class="fas fa-bulk"></i> Bulk Verify Payments
+                    </a>
+                    <a href="{% url 'admissions:bulk_decision' %}" class="btn btn-danger">
+                        <i class="fas fa-gavel"></i> Bulk Decisions
+                    </a>
+                    <a href="{% url 'admissions:waitlist_dashboard' %}" class="btn btn-info">
+                        <i class="fas fa-hourglass-half"></i> Manage Waitlist
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Activity</h3>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="nav nav-pills flex-column">
+                        {% for log in recent_logs %}
+                        <li class="nav-item">
+                            <a href="{% url 'admissions:application_detail' log.application.pk %}" class="nav-link">
+                                <span class="badge bg-{{ log.application.get_status_badge_class }} mr-2">
+                                    {{ log.get_action_display }}
+                                </span>
+                                {{ log.application.application_number }}
+                                <span class="float-right text-muted text-sm">
+                                    {{ log.created_at|timesince }} ago
+                                </span>
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="nav-item p-3 text-center text-muted">
+                            No recent activity
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Breakdown -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Application Status</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for stat in status_counts %}
+                        <div class="col-6">
+                            <div class="callout callout-{{ stat.status|lower }}">
+                                <small class="text-muted">{{ stat.status|title }}</small><br>
+                                <strong class="h4">{{ stat.count }}</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Status -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title">Payment Status</h3>
+                </div>
+                <div class="card-body">
+                    <div class="progress-group">
+                        Verified
+                        <span class="float-right"><b>{{ payment_stats.verified }}</b>/{{ total_applications }}</span>
+                        <div class="progress progress-sm">
+                            <div class="progress-bar bg-success" style="width: {% widthratio payment_stats.verified total_applications 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-group">
+                        Pending Verification
+                        <span class="float-right"><b>{{ payment_stats.unverified }}</b>/{{ total_applications }}</span>
+                        <div class="progress progress-sm">
+                            <div class="progress-bar bg-warning" style="width: {% widthratio payment_stats.unverified total_applications 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-group">
+                        Unpaid
+                        <span class="float-right"><b>{{ payment_stats.unpaid }}</b>/{{ total_applications }}</span>
+                        <div class="progress progress-sm">
+                            <div class="progress-bar bg-danger" style="width: {% widthratio payment_stats.unpaid total_applications 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

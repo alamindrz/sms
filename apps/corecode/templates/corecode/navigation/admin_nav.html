@@ -1,0 +1,39 @@
+<nav class="mt-2">
+    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        {% for item in nav_items %}
+        <li class="nav-item {% if item.children %}has-treeview{% endif %}">
+            <a href="{% if item.url != '#' %}{% url item.url %}{% else %}#{% endif %}" 
+               class="nav-link {% if request.resolver_match.url_name == item.url %}active{% endif %}">
+                <i class="nav-icon {{ item.icon }}"></i>
+                <p>
+                    {{ item.title }}
+                    {% if item.children %}
+                    <i class="right fas fa-angle-left"></i>
+                    {% endif %}
+                </p>
+            </a>
+            {% if item.children %}
+            <ul class="nav nav-treeview">
+                {% for child in item.children %}
+                <li class="nav-item">
+                    <a href="{% url child.url %}" 
+                       class="nav-link {% if request.resolver_match.url_name == child.url %}active{% endif %}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>{{ child.title }}</p>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </li>
+        {% endfor %}
+        
+        <!-- Public Admissions Link (always show) -->
+        <li class="nav-item">
+            <a href="{% url 'admissions:application_create' %}" class="nav-link">
+                <i class="nav-icon fas fa-file-alt"></i>
+                <p>Apply for Admission</p>
+            </a>
+        </li>
+    </ul>
+</nav>

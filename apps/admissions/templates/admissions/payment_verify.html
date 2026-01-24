@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Payment - {{ application.application_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-money-check-alt"></i>
+                        Verify Payment - {{ application.application_number }}
+                    </h3>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Application Details</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Applicant:</th>
+                                    <td>{{ application.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Guardian:</th>
+                                    <td>{{ application.guardian_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Applied For:</th>
+                                    <td>{{ application.admission_class }} - {{ application.admission_session }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Current Payment Status</h5>
+                            <div class="alert {% if application.payment_verified %}alert-success{% else %}alert-warning{% endif %}">
+                                <strong>Status:</strong> 
+                                {% if application.payment_verified %}
+                                    Verified on {{ application.payment_verified_date|date:"M d, Y" }}
+                                {% elif application.payment_reference %}
+                                    Pending Verification
+                                {% else %}
+                                    No Payment Reference
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h4 class="card-title">Payment Verification</h4>
+                            </div>
+                            <div class="card-body">
+                                {% for field in form %}
+                                <div class="form-group">
+                                    {{ field.label_tag }}
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        <div class="text-danger">{{ field.errors }}</div>
+                                    {% endif %}
+                                    {% if field.help_text %}
+                                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Update Verification
+                            </button>
+                            <a href="{% url 'admissions:application_detail' application.pk %}" class="btn btn-default">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fill verified by and date
+    const paymentVerifiedCheckbox = document.querySelector('#id_payment_verified');
+    const verifiedByField = document.querySelector('#id_payment_verified_by');
+    const verifiedDateField = document.querySelector('#id_payment_verified_date');
+    
+    if (paymentVerifiedCheckbox && verifiedByField && verifiedDateField) {
+        paymentVerifiedCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Get current user and time (you'd need to pass these from Django)
+                const now = new Date().toISOString().slice(0, 16);
+                verifiedDateField.value = now;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

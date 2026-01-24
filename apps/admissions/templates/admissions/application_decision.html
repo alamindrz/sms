@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Make Decision - {{ application.application_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-gavel"></i>
+                        Make Admission Decision - {{ application.application_number }}
+                    </h3>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Application Summary -->
+                    <div class="card card-secondary mb-4">
+                        <div class="card-header">
+                            <h4 class="card-title">Application Summary</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Applicant:</strong> {{ application.full_name }}<br>
+                                    <strong>Gender:</strong> {{ application.gender }}<br>
+                                    <strong>Age:</strong> {{ application.age }} years<br>
+                                    <strong>Applied For:</strong> {{ application.admission_class }} - {{ application.admission_session }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Guardian:</strong> {{ application.guardian_name }}<br>
+                                    <strong>Phone:</strong> {{ application.guardian_phone }}<br>
+                                    <strong>Email:</strong> {{ application.guardian_email }}<br>
+                                    <strong>Payment:</strong> 
+                                    {% if application.payment_verified %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Not Verified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Class Capacity Warning -->
+                    {% if class_capacity.is_full %}
+                    <div class="alert alert-danger">
+                        <h5><i class="icon fas fa-exclamation-triangle"></i> Class at Full Capacity</h5>
+                        <p>
+                            {{ application.admission_class }} currently has {{ class_capacity.current }} students 
+                            out of {{ class_capacity.max }} capacity. No seats available.
+                        </p>
+                        <p>
+                            Consider waitlisting this application or assigning to a different class.
+                        </p>
+                    </div>
+                    {% elif class_capacity.available <= 5 %}
+                    <div class="alert alert-warning">
+                        <h5><i class="icon fas fa-exclamation-circle"></i> Limited Capacity</h5>
+                        <p>
+                            Only {{ class_capacity.available }} seats remaining in {{ application.admission_class }}.
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Decision Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h4 class="card-title">Decision</h4>
+                            </div>
+                            <div class="card-body">
+                                <!-- Decision Choice -->
+                                <div class="form-group">
+                                    {{ form.decision.label_tag }}
+                                    <div class="decision-choices mt-2">
+                                        {% for choice in form.decision %}
+                                        <div class="form-check form-check-inline">
+                                            {{ choice.tag }}
+                                            <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                {{ choice.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Dynamic fields based on decision -->
+                                <div id="approve-fields" style="display: none;">
+                                    <div class="form-group">
+                                        {{ form.decision_notes.label_tag }}
+                                        {{ form.decision_notes }}
+                                    </div>
+                                </div>
+                                
+                                <div id="reject-fields" style="display: none;">
+                                    <div class="form-group">
+                                        {{ form.rejection_reason.label_tag }}
+                                        {{ form.rejection_reason }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.rejection_details.label_tag }}
+                                        {{ form.rejection_details }}
+                                        <small class="text-muted">This will be shared with the guardian</small>
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.decision_notes.label_tag }}
+                                        {{ form.decision_notes }}
+                                    </div>
+                                </div>
+                                
+                                <div id="waitlist-fields" style="display: none;">
+                                    <div class="form-group">
+                                        {{ form.waitlist_notes.label_tag }}
+                                        {{ form.waitlist_notes }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.decision_notes.label_tag }}
+                                        {{ form.decision_notes }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Previous Decisions -->
+                        {% if decision_logs %}
+                        <div class="card card-secondary mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title">Decision History</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Action</th>
+                                                <th>By</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for log in decision_logs %}
+                                            <tr>
+                                                <td>{{ log.created_at|date:"M d, Y H:i" }}</td>
+                                                <td><span class="badge bg-{{ application.get_status_badge_class }}">{{ log.action }}</span></td>
+                                                <td>{{ log.staff }}</td>
+                                                <td>{{ log.notes|truncatechars:50 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Submit Decision
+                            </button>
+                            <a href="{% url 'admissions:application_detail' application.pk %}" class="btn btn-default">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const decisionRadios = document.querySelectorAll('input[name="decision"]');
+    const approveFields = document.getElementById('approve-fields');
+    const rejectFields = document.getElementById('reject-fields');
+    const waitlistFields = document.getElementById('waitlist-fields');
+    
+    function showRelevantFields() {
+        // Hide all fields first
+        [approveFields, rejectFields, waitlistFields].forEach(field => {
+            if (field) field.style.display = 'none';
+        });
+        
+        // Show relevant fields based on selection
+        const selected = document.querySelector('input[name="decision"]:checked');
+        if (selected) {
+            if (selected.value === 'approve' && approveFields) {
+                approveFields.style.display = 'block';
+            } else if (selected.value === 'reject' && rejectFields) {
+                rejectFields.style.display = 'block';
+            } else if (selected.value === 'waitlist' && waitlistFields) {
+                waitlistFields.style.display = 'block';
+            }
+        }
+    }
+    
+    // Add event listeners
+    decisionRadios.forEach(radio => {
+        radio.addEventListener('change', showRelevantFields);
+    });
+    
+    // Initial show
+    showRelevantFields();
+});
+</script>
+{% endblock %}
