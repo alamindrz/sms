@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Application Submitted - EduSys Pro{% endblock %}
+{% block page_title %}Application Submitted Successfully!{% endblock %}
+{% block page_subtitle %}Thank you for applying to our school{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Success Message -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-8 mb-6 border border-gray-200 dark:border-gray-700 text-center">
+        <div class="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-check text-green-600 dark:text-green-400 text-3xl"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Application Received</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+            Your admission application has been submitted successfully. We will review your application and contact you via email with the next steps.
+        </p>
+        
+        <!-- Application Number -->
+        <div class="inline-block px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Your Application Number</p>
+            <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{% if request.GET.app_number %}{{ request.GET.app_number }}{% else %}APP-202401-XXXX{% endif %}</p>
+        </div>
+        
+        <!-- Important Instructions -->
+        <div class="text-left bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>Important Next Steps
+            </h3>
+            <ol class="text-sm text-blue-700 dark:text-blue-400 space-y-2">
+                <li class="flex items-start">
+                    <span class="font-bold mr-2">1.</span>
+                    <span>Check your email for application confirmation and payment instructions</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="font-bold mr-2">2.</span>
+                    <span>Pay the application fee using the provided payment details</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="font-bold mr-2">3.</span>
+                    <span>Save your application number for future reference</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="font-bold mr-2">4.</span>
+                    <span>We'll contact you within 3-5 business days for the next steps</span>
+                </li>
+            </ol>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="mb-8">
+            <h3 class="font-semibold text-gray-800 dark:text-white mb-4">Application Process Timeline</h3>
+            <div class="relative">
+                <!-- Timeline line -->
+                <div class="absolute left-0 right-0 top-4 h-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                
+                <!-- Timeline steps -->
+                <div class="relative flex justify-between">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center z-10">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <p class="text-xs font-medium text-gray-800 dark:text-white">Application</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Submitted</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center z-10">
+                            <span class="text-xs text-gray-600 dark:text-gray-400">2</span>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Payment</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Verification</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center z-10">
+                            <span class="text-xs text-gray-600 dark:text-gray-400">3</span>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Application</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Review</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 4 -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center z-10">
+                            <span class="text-xs text-gray-600 dark:text-gray-400">4</span>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Admission</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Decision</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% url 'corecode:home' %}" 
+               class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                <i class="fas fa-home mr-2"></i>Return to Homepage
+            </a>
+            <a href="{% url 'admissions:application_create' %}" 
+               class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>Submit Another Application
+            </a>
+        </div>
+    </div>
+    
+    <!-- Contact Information -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Need Help?</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-phone text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-blue-800 dark:text-blue-300">Contact Admissions</h4>
+                        <p class="text-sm text-blue-700 dark:text-blue-400">For application inquiries</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-phone-alt mr-2 text-gray-500"></i>
+                    +234 800 123 4567
+                </p>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    <i class="fas fa-envelope mr-2 text-gray-500"></i>
+                    admissions@edusyspro.edu.ng
+                </p>
+            </div>
+            
+            <div class="p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-question-circle text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-green-800 dark:text-green-300">Check Status</h4>
+                        <p class="text-sm text-green-700 dark:text-green-400">Track your application</p>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300">
+                    Use your application number to track progress. You'll also receive email updates.
+                </p>
+                <button onclick="showStatusCheck()" 
+                        class="mt-2 text-sm text-green-600 dark:text-green-400 hover:underline">
+                    <i class="fas fa-search mr-1"></i> Check Application Status
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Check Modal -->
+    <div id="statusCheckModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Check Application Status</h3>
+                        <button onclick="hideStatusCheck()" 
+                                class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Application Number
+                        </label>
+                        <input type="text" 
+                               placeholder="e.g., APP-202401-0001" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Guardian Email
+                        </label>
+                        <input type="email" 
+                               placeholder="email@example.com" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                    </div>
+                    
+                    <button onclick="checkStatus()" 
+                            class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i> Check Status
+                    </button>
+                    
+                    <div id="statusResult" class="mt-4 hidden">
+                        <!-- Status result will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function showStatusCheck() {
+    document.getElementById('statusCheckModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideStatusCheck() {
+    document.getElementById('statusCheckModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function checkStatus() {
+    const appNumber = document.querySelector('#statusCheckModal input[type="text"]').value;
+    const email = document.querySelector('#statusCheckModal input[type="email"]').value;
+    const resultDiv = document.getElementById('statusResult');
+    
+    if (!appNumber || !email) {
+        alert('Please enter both application number and email');
+        return;
+    }
+    
+    // Show loading
+    resultDiv.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-indigo-600 dark:text-indigo-400 text-2xl mb-2"></i>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Checking application status...</p>
+        </div>
+    `;
+    resultDiv.classList.remove('hidden');
+    
+    // Simulate API call
+    setTimeout(() => {
+        // Mock response - in real app, this would be an AJAX call
+        const mockResponse = {
+            status: 'under_review',
+            studentName: 'John Doe',
+            applicationDate: '2024-01-15',
+            paymentStatus: 'verified',
+            nextStep: 'Application is under review. Decision expected within 5 business days.',
+            estimatedDate: '2024-01-25'
+        };
+        
+        const statusClasses = {
+            'pending': 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300',
+            'under_review': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
+            'approved': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+            'rejected': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+            'waitlisted': 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
+        };
+        
+        const statusText = {
+            'pending': 'Pending',
+            'under_review': 'Under Review',
+            'approved': 'Approved',
+            'rejected': 'Rejected',
+            'waitlisted': 'Waitlisted',
+        };
+        
+        resultDiv.innerHTML = `
+            <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-medium text-gray-800 dark:text-white">${mockResponse.studentName}</h4>
+                    <span class="px-2 py-1 text-xs rounded-full ${statusClasses[mockResponse.status]}">
+                        ${statusText[mockResponse.status]}
+                    </span>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Application Date:</span>
+                        <span class="font-medium text-gray-800 dark:text-white">${mockResponse.applicationDate}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Payment Status:</span>
+                        <span class="font-medium text-green-600 dark:text-green-400">Verified</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">Estimated Decision:</span>
+                        <span class="font-medium text-gray-800 dark:text-white">${mockResponse.estimatedDate}</span>
+                    </div>
+                </div>
+                
+                <div class="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                    <p class="text-sm text-blue-700 dark:text-blue-400">${mockResponse.nextStep}</p>
+                </div>
+            </div>
+        `;
+    }, 1500);
+}
+
+// Close modal on background click
+document.getElementById('statusCheckModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideStatusCheck();
+    }
+});
+
+// Print application details
+function printApplication() {
+    window.print();
+}
+
+// Copy application number to clipboard
+function copyAppNumber() {
+    const appNumber = "{% if request.GET.app_number %}{{ request.GET.app_number }}{% else %}APP-202401-XXXX{% endif %}";
+    navigator.clipboard.writeText(appNumber).then(() => {
+        alert('Application number copied to clipboard!');
+    });
+}
+
+// Auto-hide status check modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideStatusCheck();
+    }
+});
+
+// Show print button after page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add print button dynamically
+    const actionButtons = document.querySelector('.flex.flex-col.sm\\:flex-row.gap-4');
+    if (actionButtons) {
+        const printButton = document.createElement('button');
+        printButton.className = 'px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
+        printButton.innerHTML = '<i class="fas fa-print mr-2"></i>Print Confirmation';
+        printButton.onclick = printApplication;
+        
+        // Insert before the last button
+        actionButtons.insertBefore(printButton, actionButtons.lastElementChild);
+    }
+});
+</script>
+
+<style>
+/* Print styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    #mainContent, 
+    #mainContent * {
+        visibility: visible;
+    }
+    
+    #mainContent {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    .bg-white {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    button, 
+    a:not(.print-only) {
+        display: none !important;
+    }
+    
+    .print-only {
+        display: block !important;
+    }
+}
+
+/* Modal animations */
+#statusCheckModal {
+    transition: opacity 0.3s ease;
+}
+
+#statusCheckModal > div:first-child {
+    transition: opacity 0.3s ease;
+}
+
+#statusCheckModal > div:last-child {
+    transition: transform 0.3s ease;
+}
+
+#statusCheckModal.hidden {
+    display: none;
+}
+
+#statusCheckModal:not(.hidden) > div:first-child {
+    opacity: 1;
+}
+
+#statusCheckModal:not(.hidden) > div:last-child {
+    transform: scale(1);
+}
+
+/* Success animation */
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.w-20.h-20.rounded-full.bg-green-100 {
+    animation: successPulse 2s ease-in-out;
+}
+</style>
+{% endblock %}
+{% endblock %}

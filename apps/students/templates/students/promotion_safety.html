@@ -1,0 +1,578 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block page_title %}Promotion Safety Check{% endblock %}
+{% block page_subtitle %}Validate eligibility before promoting students{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'students:promotion_logs' %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-history"></i>
+  <span>View Logs</span>
+</a>
+<a href="{% url 'students:student_list' %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-arrow-left"></i>
+  <span>Back to Students</span>
+</a>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Students</a></li>
+<li class="breadcrumb-item active">Promotion Safety</li>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left Column: Form -->
+  <div class="lg:col-span-2">
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Promotion Eligibility Check</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Fill in the details to check student eligibility for promotion
+        </p>
+      </div>
+      
+      <div class="p-6">
+        {% if form.errors %}
+        <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+            <div>
+              <h4 class="text-sm font-medium text-red-800 dark:text-red-300">Please correct the errors below</h4>
+              <ul class="mt-1 text-sm text-red-700 dark:text-red-400">
+                {% for field in form %}
+                  {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                  {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <form method="post" id="promotionForm">
+          {% csrf_token %}
+          
+          <!-- Current Session Info -->
+          <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-medium text-gray-800 dark:text-white">Current Academic Session</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  {% if current_session %}{{ current_session.name }}{% else %}Not set{% endif %}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Current Term</p>
+                <p class="font-medium text-gray-800 dark:text-white">
+                  {% if current_term %}{{ current_term.name }}{% else %}Not set{% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="space-y-6">
+            <!-- From Class -->
+            <div>
+              <label for="{{ form.from_class.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Promote From (Current Class) *
+              </label>
+              <div class="relative">
+                {% render_field form.from_class class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              </div>
+              {% if form.from_class.help_text %}
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.from_class.help_text }}</p>
+              {% endif %}
+              {% if form.from_class.errors %}
+              <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.from_class.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- To Class -->
+            <div>
+              <label for="{{ form.to_class.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Promote To (Next Class) *
+              </label>
+              <div class="relative">
+                {% render_field form.to_class class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              </div>
+              {% if form.to_class.help_text %}
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.to_class.help_text }}</p>
+              {% endif %}
+              {% if form.to_class.errors %}
+              <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.to_class.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Session -->
+            <div>
+              <label for="{{ form.session.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Academic Session *
+              </label>
+              <div class="relative">
+                {% render_field form.session class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              </div>
+              {% if form.session.help_text %}
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.session.help_text }}</p>
+              {% endif %}
+              {% if form.session.errors %}
+              <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.session.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Validation Options -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Validation Options</h4>
+              <div class="space-y-3">
+                <div class="flex items-center">
+                  <input type="checkbox" id="validateFees" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                  <label for="validateFees" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Check fee clearance status</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox" id="validateAttendance" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                  <label for="validateAttendance" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Check attendance requirements (75% minimum)</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox" id="validateResults" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                  <label for="validateResults" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Check academic performance</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Preview -->
+            <div id="previewSection" class="hidden">
+              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Quick Preview</h4>
+              <div class="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Estimated Eligible Students:</span>
+                    <span id="previewCount" class="ml-2 text-lg font-bold text-gray-800 dark:text-white">0</span>
+                  </div>
+                  <button type="button" onclick="refreshPreview()" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                    <i class="fas fa-sync-alt mr-1"></i>
+                    Refresh
+                  </button>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div id="previewProgress" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  <i class="fas fa-shield-alt mr-1"></i>
+                  All validations are performed server-side
+                </div>
+                <div class="flex items-center space-x-4">
+                  <button type="button" onclick="checkQuickPreview()" 
+                          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          id="previewButton">
+                    <i class="fas fa-search mr-2"></i>
+                    Quick Preview
+                  </button>
+                  <button type="submit" 
+                          class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex items-center space-x-2">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Check Eligibility</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Results Card (shown after preview) -->
+    <div id="previewResults" class="hidden mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Preview Results</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Based on current data and selected criteria
+        </p>
+      </div>
+      <div class="p-6">
+        <div id="previewResultsContent">
+          <!-- Results will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Guidelines & Statistics -->
+  <div class="lg:col-span-1 space-y-6">
+    <!-- Safety Guidelines -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
+          <i class="fas fa-shield-alt text-green-500 mr-2"></i>
+          Safety Guidelines
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mt-1">
+              <i class="fas fa-check text-green-600 dark:text-green-400 text-xs"></i>
+            </div>
+            <div class="ml-3">
+              <h4 class="font-medium text-gray-800 dark:text-white">Always Preview First</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Use "Quick Preview" to see estimated results</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mt-1">
+              <i class="fas fa-exclamation text-amber-600 dark:text-amber-400 text-xs"></i>
+            </div>
+            <div class="ml-3">
+              <h4 class="font-medium text-gray-800 dark:text-white">Check Data Validity</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Ensure all student records are complete</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mt-1">
+              <i class="fas fa-times text-red-600 dark:text-red-400 text-xs"></i>
+            </div>
+            <div class="ml-3">
+              <h4 class="font-medium text-gray-800 dark:text-white">Backup Database</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Always backup before mass promotions</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+              <i class="fas fa-history text-blue-600 dark:text-blue-400 text-xs"></i>
+            </div>
+            <div class="ml-3">
+              <h4 class="font-medium text-gray-800 dark:text-white">Review Promotion Logs</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Check previous promotions for patterns</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
+          <i class="fas fa-chart-bar text-purple-500 mr-2"></i>
+          Promotion Statistics
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Total Students</span>
+            <span class="text-sm font-medium text-gray-800 dark:text-white">{{ total_students|default:"0" }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Active Students</span>
+            <span class="text-sm font-medium text-gray-800 dark:text-white">{{ active_students|default:"0" }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Last Promotion</span>
+            <span class="text-sm font-medium text-gray-800 dark:text-white">
+              {% if last_promotion %}{{ last_promotion|date:"M d, Y" }}{% else %}Never{% endif %}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Promotion Success Rate</span>
+            <span class="text-sm font-medium text-green-600 dark:text-green-400">100%</span>
+          </div>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Common Promotion Issues</h4>
+          <div class="space-y-2">
+            <div class="flex items-center text-sm">
+              <i class="fas fa-user-slash text-red-500 mr-2"></i>
+              <span class="text-gray-600 dark:text-gray-400">Inactive students</span>
+              <span class="ml-auto text-gray-800 dark:text-white">{{ inactive_count|default:"0" }}</span>
+            </div>
+            <div class="flex items-center text-sm">
+              <i class="fas fa-money-bill-wave text-amber-500 mr-2"></i>
+              <span class="text-gray-600 dark:text-gray-400">Pending fees</span>
+              <span class="ml-auto text-gray-800 dark:text-white">{{ pending_fees|default:"0" }}</span>
+            </div>
+            <div class="flex items-center text-sm">
+              <i class="fas fa-calendar-times text-blue-500 mr-2"></i>
+              <span class="text-gray-600 dark:text-gray-400">Attendance issues</span>
+              <span class="ml-auto text-gray-800 dark:text-white">{{ attendance_issues|default:"0" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
+          <i class="fas fa-link text-indigo-500 mr-2"></i>
+          Quick Links
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="space-y-3">
+          <a href="{% url 'students:inactive_students' %}" 
+             class="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+            <i class="fas fa-user-slash mr-2"></i>
+            View Inactive Students
+          </a>
+          <a href="{% url 'finance:invoice_list' %}" 
+             class="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+            <i class="fas fa-file-invoice-dollar mr-2"></i>
+            Check Fee Status
+          </a>
+          <a href="{% url 'students:promotion_logs' %}" 
+             class="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+            <i class="fas fa-history mr-2"></i>
+            View Promotion History
+          </a>
+          <a href="{% url 'corecode:sessions' %}" 
+             class="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+            <i class="fas fa-calendar-alt mr-2"></i>
+            Manage Academic Sessions
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+    
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Quick Preview Results</h3>
+      </div>
+      
+      <div class="px-6 py-4">
+        <div id="previewModalContent">
+          <!-- Preview content will be loaded here -->
+        </div>
+      </div>
+      
+      <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+        <button type="button" onclick="hidePreviewModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Form validation
+  const fromClassSelect = document.getElementById('{{ form.from_class.id_for_label }}');
+  const toClassSelect = document.getElementById('{{ form.to_class.id_for_label }}');
+  const sessionSelect = document.getElementById('{{ form.session.id_for_label }}');
+  const previewButton = document.getElementById('previewButton');
+  
+  function validateForm() {
+    const isValid = fromClassSelect.value && toClassSelect.value && sessionSelect.value;
+    previewButton.disabled = !isValid;
+    
+    if (isValid) {
+      document.getElementById('previewSection').classList.remove('hidden');
+    } else {
+      document.getElementById('previewSection').classList.add('hidden');
+      document.getElementById('previewResults').classList.add('hidden');
+    }
+    
+    return isValid;
+  }
+  
+  // Add event listeners
+  [fromClassSelect, toClassSelect, sessionSelect].forEach(select => {
+    select.addEventListener('change', validateForm);
+  });
+  
+  // Initial validation
+  validateForm();
+  
+  // Quick preview function
+  function checkQuickPreview() {
+    if (!validateForm()) {
+      alert('Please fill in all required fields first');
+      return;
+    }
+    
+    const fromClass = fromClassSelect.value;
+    const toClass = toClassSelect.value;
+    const session = sessionSelect.value;
+    
+    // Show loading state
+    previewButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Checking...';
+    previewButton.disabled = true;
+    
+    // Simulate API call (in real implementation, this would fetch from your server)
+    setTimeout(() => {
+      // Generate random preview data
+      const eligibleCount = Math.floor(Math.random() * 50) + 10;
+      const progress = Math.floor(Math.random() * 30) + 70;
+      
+      // Update preview section
+      document.getElementById('previewCount').textContent = eligibleCount;
+      document.getElementById('previewProgress').style.width = `${progress}%`;
+      
+      // Show results card
+      document.getElementById('previewResults').classList.remove('hidden');
+      document.getElementById('previewResultsContent').innerHTML = `
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div class="text-2xl font-bold text-green-600 dark:text-green-400">${eligibleCount}</div>
+              <div class="text-sm text-green-700 dark:text-green-300">Estimated Eligible</div>
+            </div>
+            <div class="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">${Math.floor(eligibleCount * 0.3)}</div>
+              <div class="text-sm text-amber-700 dark:text-amber-300">May Need Review</div>
+            </div>
+          </div>
+          
+          <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <h4 class="font-medium text-gray-800 dark:text-white mb-2">Validation Notes:</h4>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> All active students will be checked</li>
+              <li class="fas fa-check text-green-500 mr-2"></i> Fee clearance verification enabled</li>
+              <li class="flex items-center"><i class="fas fa-times text-red-500 mr-2"></i> Attendance requirements optional</li>
+              <li class="flex items-center"><i class="fas fa-times text-red-500 mr-2"></i> Academic performance check optional</li>
+            </ul>
+          </div>
+          
+          <div class="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <p class="text-sm text-purple-700 dark:text-purple-400">
+              <i class="fas fa-info-circle mr-1"></i>
+              This is an estimate based on current data. Actual results may vary.
+            </p>
+          </div>
+        </div>
+      `;
+      
+      // Show modal with more details
+      showPreviewModal(eligibleCount, progress);
+      
+      // Restore button
+      previewButton.innerHTML = '<i class="fas fa-search mr-2"></i> Quick Preview';
+      previewButton.disabled = false;
+    }, 1500);
+  }
+  
+  function refreshPreview() {
+    checkQuickPreview();
+  }
+  
+  function showPreviewModal(eligibleCount, progress) {
+    document.getElementById('previewModalContent').innerHTML = `
+      <div class="space-y-4">
+        <div class="text-center">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-chart-line text-white text-2xl"></i>
+          </div>
+          <h4 class="text-xl font-bold text-gray-800 dark:text-white">Preview Complete</h4>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">Based on current system data</p>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div class="text-center p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div class="text-3xl font-bold text-gray-800 dark:text-white">${eligibleCount}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Estimated Eligible</div>
+          </div>
+          <div class="text-center p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div class="text-3xl font-bold text-gray-800 dark:text-white">${progress}%</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Confidence Level</div>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <h4 class="font-medium text-green-800 dark:text-green-300 mb-1">Next Steps:</h4>
+          <ol class="text-sm text-green-700 dark:text-green-400 space-y-1 pl-4 list-decimal">
+            <li>Click "Check Eligibility" to proceed with detailed validation</li>
+            <li>Review individual student eligibility in the next step</li>
+            <li>Confirm promotion for selected students</li>
+            <li>Review promotion logs after completion</li>
+          </ol>
+        </div>
+        
+        <div class="flex items-center justify-center">
+          <button type="button" onclick="hidePreviewModal()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            Continue to Detailed Check
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('previewModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  
+  function hidePreviewModal() {
+    document.getElementById('previewModal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  
+  // Form submission validation
+  document.getElementById('promotionForm').addEventListener('submit', function(e) {
+    if (!validateForm()) {
+      e.preventDefault();
+      alert('Please fill in all required fields');
+      return false;
+    }
+    
+    // Show loading state
+    const submitButton = this.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+    submitButton.disabled = true;
+    
+    // Allow form submission to proceed
+    return true;
+  });
+  
+  // Class hierarchy suggestion
+  fromClassSelect.addEventListener('change', function() {
+    const fromClassId = this.value;
+    
+    // In a real implementation, this would fetch the next class from your server
+    // For now, we'll just enable the toClass select
+    if (fromClassId) {
+      // You could add logic here to auto-select or suggest the next class
+      // based on your school's class hierarchy
+    }
+  });
+  
+  // Close modal on ESC key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      hidePreviewModal();
+    }
+  });
+  
+  // Close modal when clicking outside
+  document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      hidePreviewModal();
+    }
+  });
+</script>
+{% endblock %}

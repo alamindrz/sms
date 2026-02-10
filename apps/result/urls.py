@@ -1,22 +1,32 @@
 from django.urls import path
 from . import views
 
-app_name = 'result'
+app_name = "result"
 
 urlpatterns = [
-    # Existing URLs
-    path('', views.index, name='index'),
-    path('create/', views.create_result, name='create_result'),
-    path('edit/<int:pk>/', views.edit_results, name='edit_results'),
+    # Result Entry URLs
+    path("create/", views.SafeResultCreateView.as_view(), name="result_create"),
     
-    # Phase 8: Safety URLs
-    path('safe/create/', views.SafeResultCreateView.as_view(), name='safe_create_result'),
-    path('batch/create/', views.ResultBatchCreateView.as_view(), name='batch_create'),
-    path('batch/<int:batch_id>/bulk/', views.create_bulk_results, name='batch_bulk'),
-    path('validation/', views.ResultValidationView.as_view(), name='validation'),
-    path('export/eligible/', views.export_eligible_students, name='export_eligible'),
+    # Result Batch URLs
+    path("batch/create/", views.ResultBatchCreateView.as_view(), name="batch_create"),
+    path("batch/<int:batch_id>/bulk/", views.create_bulk_results, name="create_bulk_results"),
     
-    # AJAX endpoints
-    path('ajax/check-eligibility/', views.check_student_eligibility, name='check_eligibility'),
-    path('ajax/check-bulk-eligibility/', views.check_bulk_eligibility, name='check_bulk_eligibility'),
+    # Result Validation URLs
+    path("validation/", views.ResultValidationView.as_view(), name="result_validation"),
+    path("validation/export/", views.export_eligible_students, name="export_eligible_students"),
+    
+    # AJAX API Endpoints
+    path("ajax/check-eligibility/", views.check_student_eligibility, name="check_eligibility"),
+    path("ajax/check-bulk-eligibility/", views.check_bulk_eligibility, name="check_bulk_eligibility"),
+
+    path("list/", views.ResultListView.as_view(), name="result_list"),
+    path("<int:pk>/", views.ResultDetailView.as_view(), name="result_detail"),
+    path("<int:pk>/update/", views.ResultUpdateView.as_view(), name="result_update"),
+    path("<int:pk>/delete/", views.delete_result, name="result_delete"),
+    
+    
+    path("batch/list/", views.ResultBatchListView.as_view(), name="batch_list"),
+    path("batch/<int:pk>/", views.ResultBatchDetailView.as_view(), name="batch_detail"),
+    path("batch/<int:pk>/complete/", views.complete_batch, name="complete_batch"),
+    
 ]

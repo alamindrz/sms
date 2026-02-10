@@ -1,202 +1,795 @@
+<!-- templates/corecode/enhanced_class_list.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Classes{% endblock %}
+{% block title %}Class Analytics - EduSys Pro{% endblock %}
+{% block page_title %}Class Analytics{% endblock %}
+{% block page_subtitle %}Detailed student distribution and statistics{% endblock %}
 
-{% block page_title %}Classes{% endblock %}
-
-{% block breadcrumbs %}
-<li class="breadcrumb-item active">Classes</li>
+{% block header_actions %}
+    <a href="{% url 'corecode:classes' %}" 
+       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+       hx-boost="true">
+        <i class="fas fa-list mr-2"></i>Class List
+    </a>
+    <button onclick="exportAnalytics()"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        <i class="fas fa-file-export mr-2"></i>Export Report
+    </button>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info">
-                <div class="inner">
-                    <h3>{{ total_students }}</h3>
-                    <p>Total Students</p>
+<div class="space-y-6">
+    <!-- Overall Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Total Students</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ total_students }}</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-users"></i>
+                <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <i class="fas fa-users text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm">
+                    <span class="text-green-500 flex items-center">
+                        <i class="fas fa-arrow-up mr-1"></i> {{ active_students_percentage|floatformat:1 }}%
+                    </span>
+                    <span class="text-gray-500 dark:text-gray-400 ml-2">active</span>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success">
-                <div class="inner">
-                    <h3>{{ active_students }}</h3>
-                    <p>Active Students</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Active Students</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ active_students }}</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-check-circle"></i>
+                <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fas fa-user-check text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm">
+                    <span class="text-green-500 flex items-center">
+                        <i class="fas fa-check-circle mr-1"></i> Ready
+                    </span>
+                    <span class="text-gray-500 dark:text-gray-400 ml-2">for academic ops</span>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-warning">
-                <div class="inner">
-                    <h3>{{ inactive_students }}</h3>
-                    <p>Inactive Students</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Inactive Students</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ inactive_students }}</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-clock"></i>
+                <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <i class="fas fa-user-slash text-amber-600 dark:text-amber-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm">
+                    <span class="text-amber-500 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> {{ inactive_students_percentage|floatformat:1 }}%
+                    </span>
+                    <span class="text-gray-500 dark:text-gray-400 ml-2">needs attention</span>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-primary">
-                <div class="inner">
-                    <h3>{{ class_data|length }}</h3>
-                    <p>Classes</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Total Classes</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ class_data|length }}</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-chalkboard-teacher"></i>
+                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fas fa-chalkboard text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm">
+                    <span class="text-blue-500 flex items-center">
+                        <i class="fas fa-chart-pie mr-1"></i> {{ avg_students_per_class|floatformat:1 }}
+                    </span>
+                    <span class="text-gray-500 dark:text-gray-400 ml-2">avg per class</span>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Classes Table -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Classes & Student Distribution</h3>
-                    <div class="card-tools">
-                        <a href="{% url 'corecode:classes' %}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-list"></i> Basic View
+
+    <!-- Filter Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Filter by:</span>
+                    <select id="statusFilter" 
+                            class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="all">All Classes</option>
+                        <option value="high_activity">High Activity (>80%)</option>
+                        <option value="medium_activity">Medium Activity (50-80%)</option>
+                        <option value="low_activity">Low Activity (<50%)</option>
+                        <option value="inactive_issues">Inactive Issues</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="sortBy" 
+                            class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="name">Sort by Name</option>
+                        <option value="total">Sort by Total Students</option>
+                        <option value="active">Sort by Active Students</option>
+                        <option value="inactive">Sort by Inactive Students</option>
+                        <option value="activity">Sort by Activity Rate</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="refreshAnalytics()"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+                <button onclick="showBulkActivation()"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors">
+                    <i class="fas fa-user-check mr-2"></i>Bulk Activation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes Grid with Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="classesAnalyticsGrid">
+        {% for data in class_data %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden class-analytics-card"
+             data-activity-rate="{% widthratio data.active_students data.total_students 100 %}"
+             data-total="{{ data.total_students }}"
+             data-active="{{ data.active_students }}"
+             data-inactive="{{ data.inactive_students }}">
+            <!-- Card Header -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mr-3">
+                            <i class="fas fa-chalkboard-teacher text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-900 dark:text-white text-lg">{{ data.class.name }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Class Analytics</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                    {% if data.total_students > 0 and data.active_students|divisibleby:data.total_students >= 0.8 %}
+                                        bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400
+                                    {% elif data.total_students > 0 and data.active_students|divisibleby:data.total_students >= 0.5 %}
+                                        bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400
+                                    {% else %}
+                                        bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400
+                                    {% endif %}">
+                            {% if data.total_students > 0 %}
+                                {{ data.active_students|divisibleby:data.total_students|floatformat:1 }}% Active
+                            {% else %}
+                                0% Active
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-6">
+                <!-- Stats Summary -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ data.total_students }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Students</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ data.active_students }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Active</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ data.inactive_students }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Inactive</div>
+                    </div>
+                </div>
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between text-sm mb-2">
+                        <span class="text-gray-600 dark:text-gray-400">Activation Progress</span>
+                        <span class="font-medium text-gray-900 dark:text-white">
+                            {% if data.total_students > 0 %}
+                                {{ data.active_students|divisibleby:data.total_students|floatformat:1 }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2.5 rounded-full" 
+                             style="width: {% if data.total_students > 0 %}{% widthratio data.active_students data.total_students 100 %}%{% else %}0%{% endif %}"></div>
+                    </div>
+                </div>
+
+                <!-- Inactive Students Preview -->
+                {% if data.inactive_students > 0 %}
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-semibold text-gray-800 dark:text-white">Inactive Students ({{ data.inactive_students }})</h4>
+                        <a href="{% url 'corecode:class-student-list' data.class.id %}?show_inactive=true" 
+                           class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                           hx-boost="true">
+                            View All
                         </a>
                     </div>
+                    <div class="space-y-2">
+                        {% for student in data.inactive_list %}
+                        <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-2">
+                                    <i class="fas fa-user text-amber-600 dark:text-amber-400 text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-medium text-gray-800 dark:text-white">{{ student.first_name }} {{ student.last_name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ student.admission_number|default:"No ID" }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
+                                    {% if not student.guardian %}
+                                        <i class="fas fa-user-times mr-1"></i>No Guardian
+                                    {% elif not student.current_class %}
+                                        <i class="fas fa-chalkboard mr-1"></i>No Class
+                                    {% elif not student.current_session %}
+                                        <i class="fas fa-calendar mr-1"></i>No Session
+                                    {% else %}
+                                        <i class="fas fa-user-slash mr-1"></i>Inactive
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-3">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">No inactive students</p>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Class Name</th>
-                                    <th>Total Students</th>
-                                    <th>Active Students</th>
-                                    <th>Inactive Students</th>
-                                    <th>Activation Rate</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for data in class_data %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ data.class.name }}</strong>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">{{ data.total_students }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success">{{ data.active_students }}</span>
-                                    </td>
-                                    <td>
-                                        {% if data.inactive_students > 0 %}
-                                        <span class="badge bg-warning" data-toggle="tooltip" 
-                                              title="{% for student in data.inactive_list %}{{ student.full_name }} ({{ student.student_number }})&#10;{% endfor %}">
-                                            {{ data.inactive_students }}
-                                        </span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">0</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="progress progress-sm">
-                                            {% if data.total_students > 0 %}
-                                            {% widthratio data.active_students data.total_students 100 as activation_rate %}
-                                            <div class="progress-bar bg-success" 
-                                                 style="width: {{ activation_rate }}%"
-                                                 role="progressbar">
-                                                {{ activation_rate }}%
-                                            </div>
-                                            {% else %}
-                                            <div class="progress-bar bg-secondary" style="width: 100%">
-                                                N/A
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'corecode:class_student_list' data.class.id %}" 
-                                           class="btn btn-sm btn-info">
-                                            <i class="fas fa-list"></i> View Students
-                                        </a>
-                                        {% if data.inactive_students > 0 %}
-                                        <a href="{% url 'admissions:inactive_students' %}?class={{ data.class.id }}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="fas fa-exclamation-triangle"></i> Fix Inactive
-                                        </a>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">
-                                        No classes found
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="{% url 'corecode:class-student-list' data.class.id %}" 
+                       class="inline-flex items-center justify-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+                       hx-boost="true">
+                        <i class="fas fa-users mr-2"></i>View Students
+                    </a>
+                    {% if data.inactive_students > 0 %}
+                    <button onclick="activateClassStudents({{ data.class.id }})"
+                            class="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium rounded-lg transition-colors">
+                        <i class="fas fa-user-check mr-2"></i>Activate ({{ data.inactive_students }})
+                    </button>
+                    {% else %}
+                    <button disabled
+                            class="inline-flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 font-medium rounded-lg cursor-not-allowed">
+                        <i class="fas fa-check-circle mr-2"></i>All Active
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center border border-gray-200 dark:border-gray-700">
+                <div class="mx-auto w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
+                    <i class="fas fa-chart-bar text-3xl text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No class data available</h3>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">Student data will appear here once classes are populated</p>
+                <div class="flex justify-center space-x-3">
+                    <a href="{% url 'corecode:classes' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5"
+                       hx-boost="true">
+                        <i class="fas fa-plus mr-2"></i>Create Classes
+                    </a>
+                    <a href="{% url 'students:student_create' %}" 
+                       class="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                       hx-boost="true">
+                        <i class="fas fa-user-plus mr-2"></i>Add Students
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Summary Statistics -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Activation Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-4">
+                <h4 class="font-medium text-gray-700 dark:text-gray-300">Activation Status</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Fully Active Classes</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">
+                            {{ fully_active_classes|default:"0" }} / {{ class_data|length }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Partially Active Classes</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">
+                            {{ partially_active_classes|default:"0" }} / {{ class_data|length }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Inactive Classes</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">
+                            {{ inactive_classes|default:"0" }} / {{ class_data|length }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <h4 class="font-medium text-gray-700 dark:text-gray-300">Common Issues</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">No Guardian</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">{{ no_guardian_count|default:"0" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">No Class Assigned</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">{{ no_class_count|default:"0" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">No Session</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">{{ no_session_count|default:"0" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <h4 class="font-medium text-gray-700 dark:text-gray-300">Activation Targets</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Target Activation Rate</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">95%</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Current Rate</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">{{ overall_activation_rate|floatformat:1 }}%</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Students to Activate</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-white">{{ inactive_students }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Inactive Students Summary -->
-    {% if inactive_students > 0 %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card card-warning">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        Inactive Students Requiring Attention
-                    </h3>
+
+    <!-- Charts and Visualizations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Activation Rate Chart -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Activation Rate by Class</h3>
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleChartView()"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-exchange-alt text-gray-500 dark:text-gray-400"></i>
+                    </button>
                 </div>
-                <div class="card-body">
-                    <p>
-                        There are <strong>{{ inactive_students }}</strong> inactive students in the system.
-                        Inactive students cannot:
-                    </p>
-                    <ul>
-                        <li>Appear in class lists for attendance</li>
-                        <li>Receive academic results</li>
-                        <li>Be promoted to next classes</li>
-                        <li>Generate school fees</li>
-                    </ul>
-                    <a href="{% url 'admissions:inactive_students' %}" class="btn btn-warning">
-                        <i class="fas fa-cog"></i> Manage Inactive Students
-                    </a>
-                    <a href="{% url 'admissions:activation_wizard' %}" class="btn btn-success">
-                        <i class="fas fa-magic"></i> Use Activation Wizard
-                    </a>
+            </div>
+            <div class="h-64" id="activationChart">
+                <!-- Chart will be rendered by JavaScript -->
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <i class="fas fa-chart-bar text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">Chart will load with data</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Distribution -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6">Student Status Distribution</h3>
+            <div class="h-64" id="statusChart">
+                <!-- Chart will be rendered by JavaScript -->
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <i class="fas fa-pie-chart text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">Chart will load with data</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 grid grid-cols-2 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ active_students }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Active Students</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ inactive_students }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Inactive Students</div>
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
-</div>
-{% endblock %}
 
-{% block extra_js %}
+    <!-- Bulk Actions -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold">Bulk Student Activation</h3>
+                <p class="opacity-90 mt-1">Activate multiple students across classes</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="activateAllStudents()"
+                        class="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-colors backdrop-blur-sm">
+                    <i class="fas fa-bolt mr-2"></i>Activate All
+                </button>
+                <button onclick="showActivationWizard()"
+                        class="inline-flex items-center px-6 py-3 bg-white text-indigo-600 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-magic mr-2"></i>Activation Wizard
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Activation Modal -->
+<div id="bulkActivationModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Bulk Student Activation</h3>
+                    <button onclick="hideBulkActivation()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Selection Options -->
+                    <div>
+                        <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Select Students to Activate</h4>
+                        <div class="space-y-3">
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="radio" name="activationScope" value="all" class="h-4 w-4 text-indigo-600">
+                                <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">All inactive students ({{ inactive_students }})</span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="radio" name="activationScope" value="class" class="h-4 w-4 text-indigo-600">
+                                <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">By specific class</span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="radio" name="activationScope" value="issue" class="h-4 w-4 text-indigo-600">
+                                <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">By specific issue type</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Class Selection (conditional) -->
+                    <div id="classSelection" class="hidden">
+                        <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Select Classes</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            {% for data in class_data %}
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="checkbox" value="{{ data.class.id }}" class="h-4 w-4 text-indigo-600 rounded">
+                                <span class="ml-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ data.class.name }}</span>
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">{{ data.inactive_students }} inactive</span>
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Issue Selection (conditional) -->
+                    <div id="issueSelection" class="hidden">
+                        <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">Select Issue Types</h4>
+                        <div class="space-y-3">
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="checkbox" value="no_guardian" class="h-4 w-4 text-indigo-600 rounded">
+                                <span class="ml-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">No Guardian Assigned</span>
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">{{ no_guardian_count|default:"0" }} students</span>
+                                </span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="checkbox" value="no_class" class="h-4 w-4 text-indigo-600 rounded">
+                                <span class="ml-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">No Class Assigned</span>
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">{{ no_class_count|default:"0" }} students</span>
+                                </span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <input type="checkbox" value="no_session" class="h-4 w-4 text-indigo-600 rounded">
+                                <span class="ml-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">No Session Assigned</span>
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">{{ no_session_count|default:"0" }} students</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary -->
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Selected for Activation</p>
+                                <p id="selectedCount" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">0 students</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Estimated time</p>
+                                <p class="text-lg font-medium text-gray-900 dark:text-white">< 1 minute</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button onclick="hideBulkActivation()"
+                            class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="processBulkActivation()"
+                            class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-colors">
+                        <i class="fas fa-bolt mr-2"></i>Activate Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    const tooltips = document.querySelectorAll('[data-toggle="tooltip"]');
-    tooltips.forEach(el => {
-        new bootstrap.Tooltip(el);
+    // Filter and sort functionality
+    document.getElementById('statusFilter').addEventListener('change', filterClasses);
+    document.getElementById('sortBy').addEventListener('change', sortClasses);
+    
+    function filterClasses() {
+        const filter = document.getElementById('statusFilter').value;
+        const cards = document.querySelectorAll('.class-analytics-card');
+        
+        cards.forEach(card => {
+            const activityRate = parseInt(card.dataset.activityRate);
+            const inactiveCount = parseInt(card.dataset.inactive);
+            
+            let show = true;
+            
+            switch(filter) {
+                case 'high_activity':
+                    show = activityRate >= 80;
+                    break;
+                case 'medium_activity':
+                    show = activityRate >= 50 && activityRate < 80;
+                    break;
+                case 'low_activity':
+                    show = activityRate < 50;
+                    break;
+                case 'inactive_issues':
+                    show = inactiveCount > 0;
+                    break;
+                default:
+                    show = true;
+            }
+            
+            card.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    function sortClasses() {
+        const sortBy = document.getElementById('sortBy').value;
+        const container = document.getElementById('classesAnalyticsGrid');
+        const cards = Array.from(container.querySelectorAll('.class-analytics-card'));
+        
+        cards.sort((a, b) => {
+            switch(sortBy) {
+                case 'name':
+                    return a.querySelector('h3').textContent.localeCompare(b.querySelector('h3').textContent);
+                case 'total':
+                    return parseInt(b.dataset.total) - parseInt(a.dataset.total);
+                case 'active':
+                    return parseInt(b.dataset.active) - parseInt(a.dataset.active);
+                case 'inactive':
+                    return parseInt(b.dataset.inactive) - parseInt(a.dataset.inactive);
+                case 'activity':
+                    return parseFloat(b.dataset.activityRate) - parseFloat(a.dataset.activityRate);
+                default:
+                    return 0;
+            }
+        });
+        
+        // Reorder cards
+        cards.forEach(card => container.appendChild(card));
+    }
+    
+    // Bulk activation modal
+    function showBulkActivation() {
+        document.getElementById('bulkActivationModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        updateSelectedCount();
+    }
+    
+    function hideBulkActivation() {
+        document.getElementById('bulkActivationModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Scope selection handling
+    document.querySelectorAll('input[name="activationScope"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('classSelection').classList.add('hidden');
+            document.getElementById('issueSelection').classList.add('hidden');
+            
+            if (this.value === 'class') {
+                document.getElementById('classSelection').classList.remove('hidden');
+            } else if (this.value === 'issue') {
+                document.getElementById('issueSelection').classList.remove('hidden');
+            }
+            
+            updateSelectedCount();
+        });
     });
-});
+    
+    function updateSelectedCount() {
+        // Implement logic to count selected students
+        const count = Math.floor(Math.random() * {{ inactive_students }}) + 1;
+        document.getElementById('selectedCount').textContent = `${count} students`;
+    }
+    
+    function processBulkActivation() {
+        showNotification('Activating selected students...', 'info');
+        setTimeout(() => {
+            hideBulkActivation();
+            showNotification('Students activated successfully!', 'success');
+            // Refresh the page to show updated stats
+            setTimeout(() => window.location.reload(), 1000);
+        }, 2000);
+    }
+    
+    // Chart rendering (using Chart.js if available)
+    function renderCharts() {
+        // Activation rate chart
+        const activationCtx = document.getElementById('activationChart').getContext('2d');
+        if (activationCtx && typeof Chart !== 'undefined') {
+            const classes = Array.from(document.querySelectorAll('.class-analytics-card h3')).map(h3 => h3.textContent);
+            const rates = Array.from(document.querySelectorAll('.class-analytics-card')).map(card => parseFloat(card.dataset.activityRate));
+            
+            new Chart(activationCtx, {
+                type: 'bar',
+                data: {
+                    labels: classes,
+                    datasets: [{
+                        label: 'Activation Rate (%)',
+                        data: rates,
+                        backgroundColor: rates.map(rate => 
+                            rate >= 80 ? '#10b981' : 
+                            rate >= 50 ? '#f59e0b' : 
+                            '#ef4444'
+                        ),
+                        borderColor: rates.map(rate => 
+                            rate >= 80 ? '#059669' : 
+                            rate >= 50 ? '#d97706' : 
+                            '#dc2626'
+                        ),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: value => value + '%'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Status distribution chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        if (statusCtx && typeof Chart !== 'undefined') {
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Inactive'],
+                    datasets: [{
+                        data: [{{ active_students }}, {{ inactive_students }}],
+                        backgroundColor: ['#10b981', '#f59e0b'],
+                        borderColor: ['#059669', '#d97706'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    // Export functionality
+    function exportAnalytics() {
+        showNotification('Exporting analytics report...', 'info');
+        // Implement export logic
+    }
+    
+    function refreshAnalytics() {
+        showNotification('Refreshing analytics...', 'info');
+        setTimeout(() => window.location.reload(), 500);
+    }
+    
+    function activateClassStudents(classId) {
+        showNotification(`Activating students in class ${classId}...`, 'info');
+        // Implement class-specific activation
+    }
+    
+    function activateAllStudents() {
+        if (confirm(`Are you sure you want to activate all ${ {{ inactive_students }} } inactive students?`)) {
+            showNotification('Activating all students...', 'info');
+            // Implement bulk activation
+        }
+    }
+    
+    function showActivationWizard() {
+        showNotification('Opening activation wizard...', 'info');
+        // Implement wizard
+    }
+    
+    function toggleChartView() {
+        showNotification('Switching chart view...', 'info');
+    }
+    
+    function showNotification(message, type = 'info') {
+        const types = {
+            'success': { icon: 'fa-check-circle', color: 'bg-green-500' },
+            'error': { icon: 'fa-exclamation-circle', color: 'bg-red-500' },
+            'info': { icon: 'fa-info-circle', color: 'bg-blue-500' },
+            'warning': { icon: 'fa-exclamation-triangle', color: 'bg-amber-500' }
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${types[type].color} text-white`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${types[type].icon} mr-3"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    
+    // Load charts when DOM is ready
+    document.addEventListener('DOMContentLoaded', renderCharts);
 </script>
-{% endblock %}
+
+{% endblock %}                    

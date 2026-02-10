@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2>Background Task Monitor</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>System Status</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <td>Task Engine:</td>
+                            <td>
+                                {% if use_celery %}
+                                    <span class="badge bg-success">Celery</span>
+                                {% else %}
+                                    <span class="badge bg-warning">CPanel Sync Mode</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Environment:</td>
+                            <td>
+                                {% if is_cpanel %}
+                                    <span class="badge bg-info">CPanel</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Standard Server</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Message Broker:</td>
+                            <td><code>{{ broker_url }}</code></td>
+                        </tr>
+                        {% if queue_info %}
+                        <tr>
+                            <td>Tasks in Queue:</td>
+                            <td><span class="badge bg-primary">{{ queue_info.queued }}</span></td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Task Queue</h4>
+                </div>
+                <div class="card-body">
+                    <div id="queue-monitor">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading queue status...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Recent Tasks</h4>
+                </div>
+                <div class="card-body">
+                    <div id="task-log" style="max-height: 300px; overflow-y: auto;">
+                        <pre id="log-content" class="p-3 bg-dark text-light rounded"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh queue status
+function updateQueueStatus() {
+    fetch('/api/tasks/status/')
+        .then(response => response.json())
+        .then(data => {
+            let html = '';
+            if (data.error) {
+                html = `<div class="alert alert-danger">${data.error}</div>`;
+            } else {
+                html = `
+                    <div class="alert alert-success">
+                        <strong>✓ System Active</strong><br>
+                        Tasks in queue: <span class="badge bg-primary">${data.queue_length}</span><br>
+                        Broker: ${data.broker}<br>
+                        Last update: ${new Date(data.timestamp).toLocaleTimeString()}
+                    </div>
+                `;
+            }
+            document.getElementById('queue-monitor').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('queue-monitor').innerHTML = 
+                `<div class="alert alert-warning">Could not fetch queue status</div>`;
+        });
+}
+
+// Simulate live log updates
+function updateLog() {
+    // In a real implementation, you'd use WebSockets or Server-Sent Events
+    // For now, just show a static message
+    document.getElementById('log-content').textContent = 
+`[2024-01-15 10:30:15] INFO [tasks] ▶️ Starting task: import_students_task [ID: abc123]
+[2024-01-15 10:30:16] INFO [tasks] [████████░░░░░░░░░░]  50% - Processing record 500/1000
+[2024-01-15 10:30:17] INFO [tasks] 📊 Queue Status: Running 'import_students_task' while 2 more tasks active + 5 in queue
+[2024-01-15 10:31:00] INFO [tasks] ✅ Task completed: import_students_task [ID: abc123] - State: SUCCESS
+`;
+}
+
+// Initial load and periodic refresh
+updateQueueStatus();
+updateLog();
+setInterval(updateQueueStatus, 10000); // Update every 10 seconds
+</script>
+{% endblock %}

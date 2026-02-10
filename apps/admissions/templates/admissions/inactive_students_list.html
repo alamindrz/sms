@@ -1,0 +1,1051 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inactive Students - EduSys Pro{% endblock %}
+{% block page_title %}Inactive Students{% endblock %}
+{% block page_subtitle %}Manage students pending activation{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:student_creation_dashboard' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Dashboard
+    </a>
+    <a href="{% url 'admissions:bulk_update_students' %}" 
+       class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        <i class="fas fa-tools mr-2"></i>Bulk Update
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-user-clock text-gray-600 dark:text-gray-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Inactive</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ total_inactive }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-user-times text-red-600 dark:text-red-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No Guardian</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ no_guardian }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-chalkboard-teacher text-amber-600 dark:text-amber-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No Class</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ no_class }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-calendar text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No Session</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ no_session }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Left Column: Filters -->
+    <div>
+        <!-- Filters Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filters</h3>
+            
+            <form method="get" class="space-y-4">
+                <!-- Missing Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Missing Requirement
+                    </label>
+                    <select name="missing" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                        <option value="">All Inactive Students</option>
+                        <option value="guardian" {% if request.GET.missing == 'guardian' %}selected{% endif %}>No Guardian</option>
+                        <option value="class" {% if request.GET.missing == 'class' %}selected{% endif %}>No Class</option>
+                        <option value="session" {% if request.GET.missing == 'session' %}selected{% endif %}>No Session</option>
+                    </select>
+                </div>
+                
+                <!-- Search -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Search
+                    </label>
+                    <input type="text" 
+                           name="search" 
+                           value="{{ request.GET.search|default:'' }}"
+                           placeholder="Name or student number..."
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="space-y-2">
+                    <button type="submit" 
+                            class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'admissions:inactive_students' %}" 
+                       class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center">
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Bulk Actions</h3>
+            
+            <div class="space-y-3">
+                <button id="selectAllBtn" 
+                        class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/50 transition-colors text-left">
+                    <i class="fas fa-check-square mr-2"></i>Select All
+                </button>
+                <button id="deselectAllBtn" 
+                        class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/50 transition-colors text-left">
+                    <i class="fas fa-square mr-2"></i>Deselect All
+                </button>
+                
+                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quick Assign</p>
+                    <div class="space-y-2">
+                        <button data-action="assign_guardian" 
+                                class="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
+                            <i class="fas fa-user-plus mr-2"></i>Assign Guardian
+                        </button>
+                        <button data-action="assign_class" 
+                                class="w-full px-3 py-2 text-sm border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-left">
+                            <i class="fas fa-chalkboard-teacher mr-2"></i>Assign Class
+                        </button>
+                        <button data-action="assign_session" 
+                                class="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left">
+                            <i class="fas fa-calendar mr-2"></i>Assign Session
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <button id="bulkActivateBtn" 
+                            class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-bolt mr-2"></i>Activate Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Stats</h3>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Showing</span>
+                    <span class="font-medium text-gray-800 dark:text-white">{{ students.count }} of {{ total_inactive }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Ready to Activate</span>
+                    <span class="font-medium text-gray-800 dark:text-white" id="readyCount">0</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Selected</span>
+                    <span class="font-medium text-gray-800 dark:text-white" id="selectedCount">0</span>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Students need guardian, class, and session to activate
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Students List -->
+    <div class="lg:col-span-3">
+        <!-- Students Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Inactive Students</h3>
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count }}
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="w-12 px-4 py-3">
+                                <input type="checkbox" id="masterCheckbox" class="rounded border-gray-300 dark:border-gray-600">
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Student
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Missing Requirements
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Created
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="studentsTableBody">
+                        {% for student in students %}
+                        <tr class="student-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                            data-student-id="{{ student.pk }}"
+                            data-ready="{{ student.is_activatable|yesno:'true,false' }}">
+                            <td class="px-4 py-3">
+                                <input type="checkbox" 
+                                       class="student-checkbox rounded border-gray-300 dark:border-gray-600"
+                                       data-ready="{{ student.is_activatable|yesno:'true,false' }}">
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ student.student_number }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ student.full_name }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    {% if not student.guardian %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                        <i class="fas fa-user-times mr-1 text-xs"></i>Guardian
+                                    </span>
+                                    {% endif %}
+                                    {% if not student.current_class %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                                        <i class="fas fa-chalkboard-teacher mr-1 text-xs"></i>Class
+                                    </span>
+                                    {% endif %}
+                                    {% if not student.current_session %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                        <i class="fas fa-calendar mr-1 text-xs"></i>Session
+                                    </span>
+                                    {% endif %}
+                                    {% if student.is_activatable %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                        <i class="fas fa-check mr-1 text-xs"></i>Ready
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                {{ student.created_at|date:"d M Y" }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'admissions:student_detail' student.pk %}" 
+                                       class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                                       title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'students:student_update' student.pk %}" 
+                                       class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                                       title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if student.is_activatable %}
+                                    <a href="{% url 'admissions:student_activate' student.pk %}" 
+                                       class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                                       title="Activate">
+                                        <i class="fas fa-bolt"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center">
+                                <div class="text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-user-slash text-2xl mb-2"></i>
+                                    <p>No inactive students found</p>
+                                    <p class="text-xs mt-1">Try adjusting your filters</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if students.has_other_pages %}
+            <div class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">
+                        Showing {{ students.start_index }} to {{ students.end_index }} of {{ students.paginator.count }}
+                    </div>
+                    <div class="flex space-x-2">
+                        {% if students.has_previous %}
+                        <a href="?page={{ students.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            Previous
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in students.paginator.page_range %}
+                            {% if students.number == num %}
+                          {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inactive Students - EduSys Pro{% endblock %}
+{% block page_title %}Inactive Students{% endblock %}
+{% block page_subtitle %}Manage students pending activation{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:student_creation_dashboard' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Dashboard
+    </a>
+    <a href="{% url 'admissions:bulk_update_students' %}" 
+       class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        <i class="fas fa-tools mr-2"></i>Bulk Update
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-user-clock text-gray-600 dark:text-gray-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Inactive</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ total_inactive }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-user-times text-red-600 dark:text-red-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No Guardian</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ no_guardian }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-chalkboard-teacher text-amber-600 dark:text-amber-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No Class</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ no_class }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-calendar text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No Session</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ no_session }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Left Column: Filters -->
+    <div>
+        <!-- Filters Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filters</h3>
+            
+            <form method="get" class="space-y-4">
+                <!-- Missing Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Missing Requirement
+                    </label>
+                    <select name="missing" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                        <option value="">All Inactive Students</option>
+                        <option value="guardian" {% if request.GET.missing == 'guardian' %}selected{% endif %}>No Guardian</option>
+                        <option value="class" {% if request.GET.missing == 'class' %}selected{% endif %}>No Class</option>
+                        <option value="session" {% if request.GET.missing == 'session' %}selected{% endif %}>No Session</option>
+                    </select>
+                </div>
+                
+                <!-- Search -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Search
+                    </label>
+                    <input type="text" 
+                           name="search" 
+                           value="{{ request.GET.search|default:'' }}"
+                           placeholder="Name or student number..."
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="space-y-2">
+                    <button type="submit" 
+                            class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'admissions:inactive_students' %}" 
+                       class="block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center">
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Bulk Actions</h3>
+            
+            <div class="space-y-3">
+                <button id="selectAllBtn" 
+                        class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/50 transition-colors text-left">
+                    <i class="fas fa-check-square mr-2"></i>Select All
+                </button>
+                <button id="deselectAllBtn" 
+                        class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/50 transition-colors text-left">
+                    <i class="fas fa-square mr-2"></i>Deselect All
+                </button>
+                
+                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quick Assign</p>
+                    <div class="space-y-2">
+                        <button data-action="assign_guardian" 
+                                class="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
+                            <i class="fas fa-user-plus mr-2"></i>Assign Guardian
+                        </button>
+                        <button data-action="assign_class" 
+                                class="w-full px-3 py-2 text-sm border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-left">
+                            <i class="fas fa-chalkboard-teacher mr-2"></i>Assign Class
+                        </button>
+                        <button data-action="assign_session" 
+                                class="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left">
+                            <i class="fas fa-calendar mr-2"></i>Assign Session
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <button id="bulkActivateBtn" 
+                            class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-bolt mr-2"></i>Activate Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Stats</h3>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Showing</span>
+                    <span class="font-medium text-gray-800 dark:text-white">{{ students.count }} of {{ total_inactive }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Ready to Activate</span>
+                    <span class="font-medium text-gray-800 dark:text-white" id="readyCount">0</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Selected</span>
+                    <span class="font-medium text-gray-800 dark:text-white" id="selectedCount">0</span>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Students need guardian, class, and session to activate
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Students List -->
+    <div class="lg:col-span-3">
+        <!-- Students Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Inactive Students</h3>
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ students.start_index }}-{{ students.end_index }} of {{ students.paginator.count }}
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="w-12 px-4 py-3">
+                                <input type="checkbox" id="masterCheckbox" class="rounded border-gray-300 dark:border-gray-600">
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Student
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Missing Requirements
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Created
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="studentsTableBody">
+                        {% for student in students %}
+                        <tr class="student-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                            data-student-id="{{ student.pk }}"
+                            data-ready="{{ student.is_activatable|yesno:'true,false' }}">
+                            <td class="px-4 py-3">
+                                <input type="checkbox" 
+                                       class="student-checkbox rounded border-gray-300 dark:border-gray-600"
+                                       data-ready="{{ student.is_activatable|yesno:'true,false' }}">
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ student.student_number }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ student.full_name }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    {% if not student.guardian %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                        <i class="fas fa-user-times mr-1 text-xs"></i>Guardian
+                                    </span>
+                                    {% endif %}
+                                    {% if not student.current_class %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                                        <i class="fas fa-chalkboard-teacher mr-1 text-xs"></i>Class
+                                    </span>
+                                    {% endif %}
+                                    {% if not student.current_session %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                        <i class="fas fa-calendar mr-1 text-xs"></i>Session
+                                    </span>
+                                    {% endif %}
+                                    {% if student.is_activatable %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                        <i class="fas fa-check mr-1 text-xs"></i>Ready
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                {{ student.created_at|date:"d M Y" }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'admissions:student_detail' student.pk %}" 
+                                       class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                                       title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'students:student_update' student.pk %}" 
+                                       class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                                       title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if student.is_activatable %}
+                                    <a href="{% url 'admissions:student_activate' student.pk %}" 
+                                       class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                                       title="Activate">
+                                        <i class="fas fa-bolt"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center">
+                                <div class="text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-user-slash text-2xl mb-2"></i>
+                                    <p>No inactive students found</p>
+                                    <p class="text-xs mt-1">Try adjusting your filters</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if students.has_other_pages %}
+            <div class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">
+                        Showing {{ students.start_index }} to {{ students.end_index }} of {{ students.paginator.count }}
+                    </div>
+                    <div class="flex space-x-2">
+                        {% if students.has_previous %}
+                        <a href="?page={{ students.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            Previous
+                        </a>
+                        {% endif %}
+                        
+                        {% for num in students.paginator.page_range %}
+                            {% if students.number == num %}
+                            <span class="px-3 py-1 bg-indigo-600 text-white rounded-lg">{{ num }}</span>
+                            {% elif num > students.number|add:'-3' and num < students.number|add:'3' %}
+                            <a href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                                {{ num }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if students.has_next %}
+                        <a href="?page={{ students.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            Next
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bulk Update Modal -->
+        <div id="bulkUpdateModal" class="fixed inset-0 z-50 hidden">
+            <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+            <div class="fixed inset-0 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" id="modalTitle">Bulk Update</h3>
+                        
+                        <div class="mb-6">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" id="modalDescription">
+                                Update selected students
+                            </p>
+                            
+                            <!-- Assign Guardian Form -->
+                            <div id="assignGuardianForm" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Select Guardian
+                                </label>
+                                <select id="guardianSelect" 
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                                    <option value="">Select a guardian...</option>
+                                    <!-- Guardians will be loaded via AJAX -->
+                                </select>
+                            </div>
+                            
+                            <!-- Assign Class Form -->
+                            <div id="assignClassForm" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Select Class
+                                </label>
+                                <select id="classSelect" 
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                                    <option value="">Select a class...</option>
+                                    <!-- Classes will be loaded via AJAX -->
+                                </select>
+                            </div>
+                            
+                            <!-- Assign Session Form -->
+                            <div id="assignSessionForm" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Select Session
+                                </label>
+                                <select id="sessionSelect" 
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                                    <option value="">Select a session...</option>
+                                    <!-- Sessions will be loaded via AJAX -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" 
+                                    onclick="closeBulkUpdateModal()"
+                                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="button" 
+                                    id="confirmBulkUpdate"
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                Update Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const masterCheckbox = document.getElementById('masterCheckbox');
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const bulkActivateBtn = document.getElementById('bulkActivateBtn');
+    const bulkUpdateModal = document.getElementById('bulkUpdateModal');
+    const readyCountSpan = document.getElementById('readyCount');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    
+    // Initialize counts
+    let readyCount = 0;
+    studentCheckboxes.forEach(checkbox => {
+        if (checkbox.dataset.ready === 'true') {
+            readyCount++;
+        }
+    });
+    readyCountSpan.textContent = readyCount;
+    
+    // Update selected count and button states
+    function updateSelection() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const selectedCount = selected.length;
+        let readySelected = 0;
+        
+        selected.forEach(checkbox => {
+            if (checkbox.dataset.ready === 'true') {
+                readySelected++;
+            }
+        });
+        
+        // Update counts
+        selectedCountSpan.textContent = selectedCount;
+        
+        // Update bulk activate button
+        bulkActivateBtn.disabled = selectedCount === 0 || readySelected === 0;
+        bulkActivateBtn.innerHTML = readySelected > 0 
+            ? `<i class="fas fa-bolt mr-2"></i>Activate Selected (${readySelected} ready)`
+            : `<i class="fas fa-bolt mr-2"></i>Activate Selected`;
+        
+        // Update master checkbox
+        if (masterCheckbox) {
+            const allChecked = Array.from(studentCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(studentCheckboxes).some(cb => cb.checked);
+            masterCheckbox.checked = allChecked;
+            masterCheckbox.indeterminate = someChecked && !allChecked;
+        }
+    }
+    
+    // Master checkbox
+    if (masterCheckbox) {
+        masterCheckbox.addEventListener('change', function() {
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelection();
+        });
+    }
+    
+    // Individual checkboxes
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+    
+    // Select all button
+    selectAllBtn.addEventListener('click', function() {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        if (masterCheckbox) masterCheckbox.checked = true;
+        updateSelection();
+    });
+    
+    // Deselect all button
+    deselectAllBtn.addEventListener('click', function() {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        if (masterCheckbox) {
+            masterCheckbox.checked = false;
+            masterCheckbox.indeterminate = false;
+        }
+        updateSelection();
+    });
+    
+    // Bulk activate
+    bulkActivateBtn.addEventListener('click', function() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const readySelected = Array.from(selected).filter(cb => cb.dataset.ready === 'true');
+        
+        if (readySelected.length === 0) {
+            alert('No ready students selected. Students need guardian, class, and session to activate.');
+            return;
+        }
+        
+        const studentIds = readySelected.map(cb => {
+            const row = cb.closest('.student-row');
+            return row ? row.dataset.studentId : null;
+        }).filter(id => id);
+        
+        if (confirm(`Activate ${readySelected.length} student(s)? This will make them active in the system.`)) {
+            // Submit form to bulk activate
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "admissions:bulk_activate_students" %}';
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrfmiddlewaretoken';
+            csrfToken.value = '{{ csrf_token }}';
+            form.appendChild(csrfToken);
+            
+            studentIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'students';
+                input.value = id;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+    
+    // Bulk update actions
+    document.querySelectorAll('button[data-action]').forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const selected = document.querySelectorAll('.student-checkbox:checked');
+            
+            if (selected.length === 0) {
+                alert('Please select at least one student');
+                return;
+            }
+            
+            openBulkUpdateModal(action);
+        });
+    });
+    
+    // Open bulk update modal
+    function openBulkUpdateModal(action) {
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDescription = document.getElementById('modalDescription');
+        const assignGuardianForm = document.getElementById('assignGuardianForm');
+        const assignClassForm = document.getElementById('assignClassForm');
+        const assignSessionForm = document.getElementById('assignSessionForm');
+        
+        // Hide all forms first
+        assignGuardianForm.classList.add('hidden');
+        assignClassForm.classList.add('hidden');
+        assignSessionForm.classList.add('hidden');
+        
+        // Show appropriate form
+        if (action === 'assign_guardian') {
+            modalTitle.textContent = 'Assign Guardian';
+            modalDescription.textContent = 'Assign the same guardian to selected students';
+            assignGuardianForm.classList.remove('hidden');
+            loadGuardians();
+        } else if (action === 'assign_class') {
+            modalTitle.textContent = 'Assign Class';
+            modalDescription.textContent = 'Assign the same class to selected students';
+            assignClassForm.classList.remove('hidden');
+            loadClasses();
+        } else if (action === 'assign_session') {
+            modalTitle.textContent = 'Assign Session';
+            modalDescription.textContent = 'Assign the same session to selected students';
+            assignSessionForm.classList.remove('hidden');
+            loadSessions();
+        }
+        
+        bulkUpdateModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Close bulk update modal
+    function closeBulkUpdateModal() {
+        bulkUpdateModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Load data for bulk update
+    async function loadGuardians() {
+        // In a real app, this would be an AJAX call
+        const guardianSelect = document.getElementById('guardianSelect');
+        guardianSelect.innerHTML = '<option value="">Loading guardians...</option>';
+        
+        // Simulate API call
+        setTimeout(() => {
+            guardianSelect.innerHTML = `
+                <option value="">Select a guardian...</option>
+                <option value="1">John Doe (Parent)</option>
+                <option value="2">Jane Smith (Guardian)</option>
+                <option value="3">Robert Johnson (Parent)</option>
+                <option value="4">Sarah Williams (Guardian)</option>
+            `;
+        }, 500);
+    }
+    
+    async function loadClasses() {
+        // Similar implementation for classes
+        const classSelect = document.getElementById('classSelect');
+        classSelect.innerHTML = '<option value="">Loading classes...</option>';
+        
+        setTimeout(() => {
+            classSelect.innerHTML = `
+                <option value="">Select a class...</option>
+                <option value="1">Primary 1</option>
+                <option value="2">Primary 2</option>
+                <option value="3">Primary 3</option>
+                <option value="4">Primary 4</option>
+            `;
+        }, 500);
+    }
+    
+    async function loadSessions() {
+        // Similar implementation for sessions
+        const sessionSelect = document.getElementById('sessionSelect');
+        sessionSelect.innerHTML = '<option value="">Loading sessions...</option>';
+        
+        setTimeout(() => {
+            sessionSelect.innerHTML = `
+                <option value="">Select a session...</option>
+                <option value="1">2023/2024 Academic Session</option>
+                <option value="2">2024/2025 Academic Session</option>
+            `;
+        }, 500);
+    }
+    
+    // Confirm bulk update
+    document.getElementById('confirmBulkUpdate').addEventListener('click', function() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const studentIds = Array.from(selected).map(cb => {
+            const row = cb.closest('.student-row');
+            return row ? row.dataset.studentId : null;
+        }).filter(id => id);
+        
+        let formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        studentIds.forEach(id => {
+            formData.append('students', id);
+        });
+        
+        // Determine which action is active
+        if (!document.getElementById('assignGuardianForm').classList.contains('hidden')) {
+            const guardianId = document.getElementById('guardianSelect').value;
+            if (!guardianId) {
+                alert('Please select a guardian');
+                return;
+            }
+            formData.append('action', 'assign_guardian');
+            formData.append('guardian_id', guardianId);
+        } else if (!document.getElementById('assignClassForm').classList.contains('hidden')) {
+            const classId = document.getElementById('classSelect').value;
+            if (!classId) {
+                alert('Please select a class');
+                return;
+            }
+            formData.append('action', 'assign_class');
+            formData.append('class_id', classId);
+        } else if (!document.getElementById('assignSessionForm').classList.contains('hidden')) {
+            const sessionId = document.getElementById('sessionSelect').value;
+            if (!sessionId) {
+                alert('Please select a session');
+                return;
+            }
+            formData.append('action', 'assign_session');
+            formData.append('session_id', sessionId);
+        }
+        
+        // Submit form
+        fetch('{% url "admissions:bulk_update_students" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Updated ${data.updated} student(s) successfully`);
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to update students'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update students');
+        });
+    });
+    
+    // Close modal on background click
+    bulkUpdateModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeBulkUpdateModal();
+        }
+    });
+    
+    // Initialize selection
+    updateSelection();
+});
+</script>
+{% endblock %}
+{% endblock %}

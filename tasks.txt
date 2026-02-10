@@ -1,0 +1,60 @@
+==============================
+REDIS (BROKER)
+==============================
+
+# Start Redis (Ubuntu / Debian)
+redis-server
+
+# Start Redis (Termux)
+redis-server --daemonize no
+
+# Check Redis is running
+redis-cli ping
+# Expected output: PONG
+
+
+==============================
+CELERY WORKER
+==============================
+
+# Basic worker
+celery -A config worker -l info
+
+# Worker with concurrency control (recommended)
+celery -A config worker -l info --concurrency=4
+
+# Worker with event tracking (for monitoring)
+celery -A config worker -l info -E
+
+
+==============================
+CELERY BEAT (Scheduler)
+==============================
+
+# Run Celery Beat (simple, no DB scheduler)
+celery -A config beat -l info
+
+# Run Celery Beat with Django DB scheduler (recommended)
+celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+
+==============================
+CELERY WORKER + BEAT (DEV ONLY)
+==============================
+
+# Run both in one process (NOT for production)
+celery -A config worker -l info -B
+
+
+==============================
+FLOWER (OPTIONAL MONITORING)
+==============================
+
+# Install flower
+pip install flower
+
+# Run flower
+celery -A config flower --port=5555
+
+# Open browser
+http://localhost:5555

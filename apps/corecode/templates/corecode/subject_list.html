@@ -1,71 +1,606 @@
+<!-- templates/corecode/subject_list.html -->
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load static %}
 
+{% block title %}Subjects - EduSys Pro{% endblock %}
+{% block page_title %}Subjects & Curriculum{% endblock %}
+{% block page_subtitle %}Manage academic subjects and course curriculum{% endblock %}
 
-{% block title %}
-Subjects
-{% endblock title %}
-
-
-{% block breadcrumb %}
-  <a class="btn btn-primary" href="#" data-toggle="modal" data-target="#modal1">
-    <i class="fa fa-plus"></i>
-    Add new subject
-  </a>
-{% endblock breadcrumb %}
-  
+{% block header_actions %}
+    <a href="{% url 'corecode:subject-create' %}" 
+       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+       hx-boost="true">
+        <i class="fas fa-plus mr-2"></i>Add Subject
+    </a>
+    <button onclick="bulkImport()"
+            class="inline-flex items-center px-4 py-2 border border-indigo-300 dark:border-indigo-600 text-indigo-700 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+        <i class="fas fa-file-import mr-2"></i>Import
+    </button>
+{% endblock %}
 
 {% block content %}
-  <div class="row">
-    <div class="col-sm-12">
-
-        <table class="table table-bordered">
-          <tbody>
-            {% for object in object_list %}
-            <tr>
-              <td>{{ object }}</td>
-              <td><a href="{% url 'subject-update' object.id %}"><i
-                    class="fa fa-edit"></i></a> <a
-                  href="{% url 'subject-delete' object.id %}"><i
-                    class="fa fa-trash-alt"></i></a></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-
+<div class="space-y-6">
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Total Subjects</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ object_list.count }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <i class="fas fa-book text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Core Subjects</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ core_subjects|default:"0" }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <i class="fas fa-star text-red-600 dark:text-red-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Electives</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ elective_subjects|default:"0" }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fas fa-bookmark text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Active Classes</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ active_classes|default:"0" }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fas fa-chalkboard text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
+    <!-- Filter Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Filter by:</span>
+                    <select id="subjectTypeFilter" 
+                            class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="all">All Subjects</option>
+                        <option value="core">Core Subjects</option>
+                        <option value="elective">Electives</option>
+                        <option value="language">Languages</option>
+                        <option value="science">Science</option>
+                        <option value="arts">Arts</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="classFilter" 
+                            class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="all">All Classes</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}">{{ class.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="exportSubjects()"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Export
+                </button>
+                <button onclick="showImportModal()"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors">
+                    <i class="fas fa-upload mr-2"></i>Bulk Import
+                </button>
+            </div>
+        </div>
+    </div>
 
-  <div class="modal fade" id="modal1" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form action="{% url 'subject-create' %}" method="POST">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Add new subject</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-              {% csrf_token %}
+    <!-- Main Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- Card Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Academic Subjects</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage subjects and their assignments</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <input type="text" 
+                               placeholder="Search subjects..." 
+                               class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none w-64"
+                               id="subjectSearch">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-              {% for field in form %}
-                  <div class="form-group">
-                    {{field.label_tag}}
-                    {{ field|add_class:"form-control" }}
-                  </div>
-              {% endfor %}
-          </div>
+        <!-- Subjects Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       id="selectAll" 
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
+                                <span class="ml-2">Subject</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Code
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Type
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Classes
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Teachers
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="subjectTableBody">
+                    {% for subject in object_list %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors subject-row" 
+                        data-type="{{ subject.type|default:'core' }}" 
+                        data-classes="{{ subject.classes.all|join:',' }}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       value="{{ subject.id }}" 
+                                       class="subject-checkbox h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
+                                <div class="ml-4">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 rounded-lg {% cycle 'bg-red-100 dark:bg-red-900/30' 'bg-blue-100 dark:bg-blue-900/30' 'bg-green-100 dark:bg-green-900/30' 'bg-purple-100 dark:bg-purple-900/30' %} flex items-center justify-center mr-3">
+                                            <i class="fas fa-book {% cycle 'text-red-600 dark:text-red-400' 'text-blue-600 dark:text-blue-400' 'text-green-600 dark:text-green-400' 'text-purple-600 dark:text-purple-400' %}"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                {{ subject.name }}
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ subject.code|default:"SUB-" }}{{ subject.id }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                                {{ subject.code|default:"-" }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if subject.type == 'core' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
+                                    <i class="fas fa-star mr-1"></i>Core
+                                </span>
+                            {% elif subject.type == 'elective' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                                    <i class="fas fa-bookmark mr-1"></i>Elective
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
+                                    <i class="fas fa-book mr-1"></i>General
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex flex-wrap gap-1 max-w-xs">
+                                {% for class in subject.classes.all|slice:":3" %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400">
+                                        {{ class.name|truncatechars:10 }}
+                                    </span>
+                                {% endfor %}
+                                {% if subject.classes.count > 3 %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
+                                        +{{ subject.classes.count|add:"-3" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ subject.teacher_count|default:"0" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'corecode:subject-update' subject.pk %}" 
+                                   class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                                   title="Edit"
+                                   hx-boost="true">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'corecode:subject-delete' subject.pk %}" 
+                                   class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                                   title="Delete"
+                                   hx-boost="true">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <a href="#" 
+                                   class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                                   title="Assign to Classes"
+                                   onclick="assignSubject({{ subject.id }})">
+                                    <i class="fas fa-link"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-book-open text-4xl mb-4"></i>
+                                <p class="text-lg font-medium">No subjects found</p>
+                                <p class="text-sm mt-2">Create subjects to build your curriculum</p>
+                                <div class="mt-4 flex space-x-3">
+                                    <a href="{% url 'corecode:subject-create' %}" 
+                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5"
+                                       hx-boost="true">
+                                        <i class="fas fa-plus mr-2"></i>Create Subject
+                                    </a>
+                                    <button onclick="importSampleSubjects()"
+                                            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <i class="fas fa-magic mr-2"></i>Import Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActions" class="hidden px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-indigo-50 dark:bg-indigo-900/20">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-indigo-700 dark:text-indigo-300">
+                        <span id="selectedCount">0</span> subjects selected
+                    </span>
+                    <div class="flex items-center space-x-2">
+                        <select id="bulkActionSelect" 
+                                class="border border-indigo-300 dark:border-indigo-600 rounded-lg px-3 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Choose action...</option>
+                            <option value="assign_classes">Assign to Classes</option>
+                            <option value="assign_teacher">Assign Teacher</option>
+                            <option value="export_selected">Export Selected</option>
+                            <option value="delete">Delete Selected</option>
+                        </select>
+                        <button onclick="applyBulkAction()"
+                                class="inline-flex items-center px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+                <button onclick="clearSelection()"
+                        class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300">
+                    Clear selection
+                </button>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-400">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </div>
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        <i class="fas fa-chevron-left mr-2"></i>Previous
+                    </a>
+                    {% endif %}
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        Next<i class="fas fa-chevron-right ml-2"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Add Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Add Subject</h3>
+        <form method="post" action="{% url 'corecode:subject-create' %}" class="space-y-4" hx-boost="true" hx-target="#subjectTableBody" hx-swap="beforeend">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for field in form %}
+                <div class="space-y-2">
+                    <label for="quick_{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+                    </label>
+                    <input type="{{ field.field.widget.input_type }}" 
+                           name="{{ field.name }}" 
+                           id="quick_{{ field.id_for_label }}"
+                           {% if field.field.required %}required{% endif %}
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                           placeholder="{{ field.field.widget.attrs.placeholder|default:'Subject name' }}">
+                </div>
+                {% endfor %}
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="reset"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <i class="fas fa-plus mr-2"></i>Add Subject
+                </button>
+            </div>
         </form>
-      </div>
     </div>
-  </div>
+</div>
 
-{% endblock content %}
-
+<!-- Import Modal -->
+<div id="importModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Import Subjects</h3>
+                    <button onclick="hideImportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center">
+                        <i class="fas fa-file-excel text-4xl text-green-500 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400 mb-2">Drag & drop Excel/CSV file here</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">or</p>
+                        <input type="file" id="fileInput" class="hidden" accept=".csv,.xlsx,.xls">
+                        <label for="fileInput" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg cursor-pointer transition-colors">
+                            <i class="fas fa-upload mr-2"></i>Choose File
+                        </label>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <p class="font-medium mb-2">File Requirements:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>CSV or Excel format (.csv, .xlsx, .xls)</li>
+                            <li>Required columns: Name, Code (optional), Type</li>
+                            <li>Maximum file size: 5MB</li>
+                            <li>Sample template: <a href="#" class="text-indigo-600 dark:text-indigo-400 hover:underline">Download</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button onclick="hideImportModal()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="processImport()"
+                            class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-colors">
+                        <i class="fas fa-file-import mr-2"></i>Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Search functionality
+    document.getElementById('subjectSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        filterSubjects();
+    });
+    
+    // Filter functionality
+    document.getElementById('subjectTypeFilter').addEventListener('change', filterSubjects);
+    document.getElementById('classFilter').addEventListener('change', filterSubjects);
+    
+    function filterSubjects() {
+        const searchTerm = document.getElementById('subjectSearch').value.toLowerCase();
+        const typeFilter = document.getElementById('subjectTypeFilter').value;
+        const classFilter = document.getElementById('classFilter').value;
+        
+        const rows = document.querySelectorAll('.subject-row');
+        
+        rows.forEach(row => {
+            const subjectName = row.querySelector('.text-sm.font-medium').textContent.toLowerCase();
+            const subjectType = row.dataset.type;
+            const subjectClasses = row.dataset.classes;
+            
+            let show = true;
+            
+            // Search filter
+            if (searchTerm && !subjectName.includes(searchTerm)) {
+                show = false;
+            }
+            
+            // Type filter
+            if (typeFilter !== 'all' && subjectType !== typeFilter) {
+                show = false;
+            }
+            
+            // Class filter
+            if (classFilter !== 'all' && subjectClasses.indexOf(classFilter) === -1) {
+                show = false;
+            }
+            
+            row.style.display = show ? '' : 'none';
+        });
+    }
+    
+    // Bulk selection
+    document.getElementById('selectAll').addEventListener('change', function(e) {
+        const checkboxes = document.querySelectorAll('.subject-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+        });
+        updateBulkActions();
+    });
+    
+    function updateBulkActions() {
+        const checkboxes = document.querySelectorAll('.subject-checkbox');
+        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        const bulkActions = document.getElementById('bulkActions');
+        
+        document.getElementById('selectedCount').textContent = selected.length;
+        
+        if (selected.length > 0) {
+            bulkActions.classList.remove('hidden');
+        } else {
+            bulkActions.classList.add('hidden');
+        }
+    }
+    
+    document.querySelectorAll('.subject-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    function clearSelection() {
+        document.querySelectorAll('.subject-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('selectAll').checked = false;
+        updateBulkActions();
+    }
+    
+    function applyBulkAction() {
+        const action = document.getElementById('bulkActionSelect').value;
+        const selectedIds = Array.from(document.querySelectorAll('.subject-checkbox:checked'))
+                                .map(cb => cb.value);
+        
+        if (selectedIds.length === 0) {
+            showNotification('Please select subjects first', 'warning');
+            return;
+        }
+        
+        if (!action) {
+            showNotification('Please choose an action', 'warning');
+            return;
+        }
+        
+        // Implement bulk actions
+        showNotification(`${action} action applied to ${selectedIds.length} subjects`, 'info');
+    }
+    
+    // Import modal
+    function showImportModal() {
+        document.getElementById('importModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function hideImportModal() {
+        document.getElementById('importModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    function processImport() {
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files.length) {
+            showNotification('Please select a file first', 'warning');
+            return;
+        }
+        
+        // Simulate import process
+        showNotification('Importing subjects...', 'info');
+        setTimeout(() => {
+            hideImportModal();
+            showNotification('Subjects imported successfully!', 'success');
+            // Refresh the page or update table
+            window.location.reload();
+        }, 2000);
+    }
+    
+    function importSampleSubjects() {
+        showNotification('Importing sample subjects...', 'info');
+        // Implement sample import
+    }
+    
+    function assignSubject(subjectId) {
+        // Implement subject assignment to classes
+        showNotification(`Assigning subject ${subjectId} to classes...`, 'info');
+    }
+    
+    function exportSubjects() {
+        showNotification('Exporting subjects to CSV...', 'info');
+        // Implement export
+    }
+    
+    // Sample subject names for autocomplete
+    const subjectSuggestions = [
+        'Mathematics', 'English Language', 'Physics', 'Chemistry', 'Biology',
+        'History', 'Geography', 'Computer Science', 'Economics', 'Business Studies',
+        'Accounting', 'Art & Design', 'Music', 'Physical Education', 'French',
+        'Spanish', 'German', 'Chinese', 'Hindi', 'Sanskrit',
+        'Environmental Science', 'Psychology', 'Sociology', 'Political Science', 'Law',
+        'Statistics', 'Calculus', 'Algebra', 'Geometry', 'Trigonometry'
+    ];
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const nameInput = document.querySelector('input[name="name"]');
+        if (nameInput) {
+            const datalist = document.createElement('datalist');
+            datalist.id = 'subjectSuggestions';
+            
+            subjectSuggestions.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                datalist.appendChild(option);
+            });
+            
+            nameInput.parentNode.appendChild(datalist);
+            nameInput.setAttribute('list', 'subjectSuggestions');
+        }
+    });
+    
+    function showNotification(message, type = 'info') {
+        const types = {
+            'success': { icon: 'fa-check-circle', color: 'bg-green-500' },
+            'error': { icon: 'fa-exclamation-circle', color: 'bg-red-500' },
+            'info': { icon: 'fa-info-circle', color: 'bg-blue-500' },
+            'warning': { icon: 'fa-exclamation-triangle', color: 'bg-amber-500' }
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${types[type].color} text-white`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${types[type].icon} mr-3"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+</script>
+{% endblock %}

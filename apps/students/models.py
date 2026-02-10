@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.corecode.models import StudentClass
-
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 import uuid
 
@@ -27,7 +27,11 @@ class Student(models.Model):
         GRADUATED = 'graduated', _('Graduated')
         WITHDRAWN = 'withdrawn', _('Withdrawn')
         SUSPENDED = 'suspended', _('Suspended')
-    
+
+    last_activation_check = models.DateTimeField(null=True, blank=True, verbose_name=_("Last Activation Check"))
+    activation_task_id = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Activation Task ID"))
+     
+
     # PHASE 4: Student Creation Tracking
     created_via = models.CharField(
         max_length=20,
@@ -86,7 +90,7 @@ class Student(models.Model):
         verbose_name=_("Passport Photo")
     )
     
-    # Guardian Information
+    #Guardian Information
     guardian = models.ForeignKey(
         'students.Guardian',  # We'll create this model next
         on_delete=models.SET_NULL,
@@ -308,7 +312,8 @@ class Student(models.Model):
         
         return int((met / len(requirements)) * 100)
 
-# Create Guardian Model
+
+
 class Guardian(models.Model):
     """Guardian/Parent model"""
     
@@ -324,7 +329,7 @@ class Guardian(models.Model):
             ('Prof', 'Prof'),
             ('Chief', 'Chief'),
             ('Alhaji', 'Alhaji'),
-            ('Alhaja', 'Alhaja'),
+            ('Hajiya', 'Hajiya'),
         ]
     )
     surname = models.CharField(max_length=200)
@@ -351,7 +356,6 @@ class Guardian(models.Model):
         ]
     )
     
-    # User Account (optional)
     user = models.OneToOneField(
         'auth.User',
         on_delete=models.SET_NULL,
@@ -359,6 +363,46 @@ class Guardian(models.Model):
         blank=True,
         related_name='guardian_profile'
     )
+    
+    # Task tracking for user creation
+    user_creation_task_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name=_("User Creation Task ID")
+    )
+    
+    user_creation_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', _('Pending')),
+            ('queued', _('Queued')),
+            ('processing', _('Processing')),
+            ('completed', _('Completed')),
+            ('failed', _('Failed')),
+        ],
+        default='pending',
+        verbose_name=_("User Creation Status")
+    )
+    
+    user_created_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("User Created At")
+    )
+    
+    last_welcome_email_sent = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Last Welcome Email")
+    )
+    
+    class Meta:
+        ordering = ['surname', 'firstname']
+        verbose_name = _('Guardian')
+        verbose_name_plural = _('Guardians')
+    
+    last_welcome_email_sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Last Welcome Email"))
     
     # Photo
     photo = models.ImageField(
@@ -401,69 +445,161 @@ class Guardian(models.Model):
         """Get all students under this guardian"""
         return self.students.all()
     
-    def create_user_account(self):
-        """Create a user account for the guardian"""
-        from django.contrib.auth.models import User
         
-        if not self.user:
-            username = f"{self.email.split('@')[0]}_{self.id}"
-            user = User.objects.create_user(
-                username=username,
-                email=self.email,
-                password=User.objects.make_random_password()
-            )
-            user.first_name = self.firstname
-            user.last_name = self.surname
-            user.save()
-            self.user = user
-            self.save()
-            
-            # Send welcome email with password reset link
-            self.send_welcome_email()
-    
-    def send_welcome_email(self):
-        """Send welcome email to guardian"""
-        from django.core.mail import send_mail
-        from django.conf import settings
-        from django.urls import reverse
-        
-        subject = f"Welcome to {settings.SCHOOL_NAME} Parent Portal"
-        reset_url = reverse('password_reset')
-        
-        message = f"""
-        Dear {self.full_name},
-        
-        Welcome to the {settings.SCHOOL_NAME} Parent Portal!
-        
-        Your account has been created with the following details:
-        - Username: {self.user.username}
-        - Email: {self.email}
-        
-        To access the portal, please:
-        1. Go to: {settings.SITE_URL}
-        2. Click "Forgot Password"
-        3. Enter your email: {self.email}
-        4. Follow the instructions to set your password
-        
-        You will be able to:
-        - View your ward's academic progress
-        - Check fee payments
-        - Receive school announcements
-        - Update your contact information
-        
-        Best regards,
-        {settings.SCHOOL_NAME}
-        """
-        
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[self.email],
-            fail_silently=True,
-        )
+    def save(self, *args, **kwargs):
+        # Update timestamps based on status
+        if self.user_creation_status == 'completed' and not self.user_created_at:
+            self.user_created_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class StudentBulkUpload(models.Model):
     date_uploaded = models.DateTimeField(auto_now=True)
     csv_file = models.FileField(upload_to="students/bulkupload/")
+    
+    # Task tracking
+    task_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name=_("Task ID"),
+        help_text=_("Celery task ID for tracking")
+    )
+    
+    task_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', _('Pending')),
+            ('queued', _('Queued')),
+            ('processing', _('Processing')),
+            ('completed', _('Completed')),
+            ('failed', _('Failed')),
+            ('cancelled', _('Cancelled')),
+        ],
+        default='pending',
+        verbose_name=_("Task Status")
+    )
+    
+    processing_started = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Processing Started")
+    )
+    
+    processing_completed = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Processing Completed")
+    )
+    
+    total_records = models.IntegerField(
+        default=0,
+        verbose_name=_("Total Records")
+    )
+    
+    records_processed = models.IntegerField(
+        default=0,
+        verbose_name=_("Records Processed")
+    )
+    
+    records_created = models.IntegerField(
+        default=0,
+        verbose_name=_("Records Created")
+    )
+    
+    records_failed = models.IntegerField(
+        default=0,
+        verbose_name=_("Records Failed")
+    )
+    
+    error_message = models.TextField(
+        blank=True,
+        verbose_name=_("Error Message")
+    )
+    
+    progress_percentage = models.IntegerField(
+        default=0,
+        verbose_name=_("Progress %"),
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
+    
+    current_status_message = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_("Current Status")
+    )
+    
+    class Meta:
+        ordering = ['-date_uploaded']
+        verbose_name = _('Student Bulk Upload')
+        verbose_name_plural = _('Student Bulk Uploads')
+    
+    def save(self, *args, **kwargs):
+        # Auto-update timestamps based on status
+        if self.task_status == 'processing' and not self.processing_started:
+            self.processing_started = timezone.now()
+        elif self.task_status in ['completed', 'failed', 'cancelled'] and not self.processing_completed:
+            self.processing_completed = timezone.now()
+        
+        # Ensure progress is within bounds
+        if self.progress_percentage < 0:
+            self.progress_percentage = 0
+        elif self.progress_percentage > 100:
+            self.progress_percentage = 100
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def duration_seconds(self):
+        """Calculate processing duration in seconds"""
+        if self.processing_started and self.processing_completed:
+            return (self.processing_completed - self.processing_started).total_seconds()
+        elif self.processing_started:
+            return (timezone.now() - self.processing_started).total_seconds()
+        return 0
+    
+    @property
+    def duration_formatted(self):
+        """Format duration as human-readable string"""
+        seconds = self.duration_seconds
+        if seconds < 60:
+            return f"{seconds:.1f}s"
+        elif seconds < 3600:
+            return f"{seconds/60:.1f}m"
+        else:
+            return f"{seconds/3600:.1f}h"
+    
+    @property
+    def is_processing(self):
+        return self.task_status == 'processing'
+    
+    @property
+    def duration(self):
+        """Calculate processing duration in seconds"""
+        if self.processing_started and self.processing_completed:
+            return (self.processing_completed - self.processing_started).total_seconds()
+        elif self.processing_started:
+            return (timezone.now() - self.processing_started).total_seconds()
+        return 0
+
+
+
+
+
+class PromotionLog(models.Model):
+    """Log student promotions for audit trail"""
+    student = models.ForeignKey('Student', on_delete=models.CASCADE)
+    from_class = models.ForeignKey('corecode.StudentClass', on_delete=models.CASCADE, 
+                                   related_name='promoted_from')
+    to_class = models.ForeignKey('corecode.StudentClass', on_delete=models.CASCADE,
+                                 related_name='promoted_to')
+    session = models.ForeignKey('corecode.AcademicSession', on_delete=models.CASCADE)
+    promoted_by = models.ForeignKey('staffs.Staff', on_delete=models.SET_NULL, null=True)
+    promoted_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-promoted_at']
+    
+    def __str__(self):
+        return f"{self.student} promoted from {self.from_class} to {self.to_class}"

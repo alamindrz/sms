@@ -1,23 +1,206 @@
 {% extends 'base.html' %}
+{% load static %}
 
+{% block page_title %}Delete Student{% endblock %}
+{% block page_subtitle %}Confirm deletion of student record{% endblock %}
 
-{% block title %}
-{% endblock title %}
+{% block header_actions %}
+<a href="{% url 'students:student_detail' student.pk %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-arrow-left"></i>
+  <span>Back to Profile</span>
+</a>
+{% endblock %}
 
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Students</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_detail' student.pk %}">{{ student.full_name }}</a></li>
+<li class="breadcrumb-item active">Delete</li>
+{% endblock %}
 
 {% block content %}
+<div class="max-w-2xl mx-auto">
+  <!-- Warning Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-200 dark:border-red-800 overflow-hidden">
+    <div class="p-6">
+      <!-- Warning Icon -->
+      <div class="flex justify-center mb-6">
+        <div class="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-3xl"></i>
+        </div>
+      </div>
+      
+      <!-- Warning Message -->
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Delete Student Record</h2>
+        <p class="text-gray-600 dark:text-gray-400">
+          You are about to delete the student record for <span class="font-semibold text-gray-800 dark:text-white">{{ student.full_name }}</span>. 
+          This action cannot be undone.
+        </p>
+      </div>
 
-<form action="" method="POST">
-  {% csrf_token %}
+      <!-- Student Info -->
+      <div class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800 rounded-lg p-4 mb-6">
+        <div class="flex items-center space-x-4">
+          {% if student.passport %}
+          <img src="{{ student.passport.url }}" alt="{{ student.full_name }}" class="h-16 w-16 rounded-full object-cover border-2 border-red-200 dark:border-red-800">
+          {% else %}
+          <div class="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold border-2 border-red-200 dark:border-red-800">
+            {{ student.firstname|first|upper }}{{ student.surname|first|upper }}
+          </div>
+          {% endif %}
+          <div>
+            <h4 class="font-bold text-gray-800 dark:text-white">{{ student.full_name }}</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ student.student_number }}</p>
+            <div class="mt-1 flex items-center space-x-2">
+              <span class="text-xs px-2 py-1 rounded-full 
+                {% if student.status == 'active' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300
+                {% elif student.status == 'inactive' %}bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300
+                {% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300{% endif %}">
+                {{ student.get_status_display }}
+              </span>
+              {% if student.current_class %}
+              <span class="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                {{ student.current_class }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <div class="alert">
-    <p>Are you sure you want to delete "{{ object }}"?</p>
-    <p>All contents attached to this student will be deleted</p>
+      <!-- Impact Summary -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">What will be deleted?</h3>
+        <div class="space-y-3">
+          <div class="flex items-start text-red-600 dark:text-red-400">
+            <i class="fas fa-user-slash mt-1 mr-3"></i>
+            <div>
+              <p class="font-medium">Student Record</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">All personal, academic, and medical information</p>
+            </div>
+          </div>
+          {% if student.guardian %}
+          <div class="flex items-start text-amber-600 dark:text-amber-400">
+            <i class="fas fa-unlink mt-1 mr-3"></i>
+            <div>
+              <p class="font-medium">Guardian Link</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Link to {{ student.guardian.full_name }} will be removed</p>
+            </div>
+          </div>
+          {% endif %}
+          {% if payments %}
+          <div class="flex items-start text-red-600 dark:text-red-400">
+            <i class="fas fa-file-invoice-dollar mt-1 mr-3"></i>
+            <div>
+              <p class="font-medium">Financial Records</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ payments|length }} invoice record{{ payments|pluralize }} will be affected</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Consequences -->
+      <div class="mb-8 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <h4 class="font-semibold text-amber-800 dark:text-amber-300 mb-2">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          Important Considerations
+        </h4>
+        <ul class="text-sm text-amber-700 dark:text-amber-400 space-y-1">
+          <li>• This action is permanent and cannot be recovered</li>
+          <li>• Financial records linked to this student will be orphaned</li>
+          <li>• Academic results associated with this student will be lost</li>
+          <li>• Consider deactivating instead of deleting</li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <i class="fas fa-shield-alt mr-1"></i>
+          Requires admin privileges
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'students:student_detail' student.pk %}" 
+             class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            Cancel
+          </a>
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" 
+                    onclick="return confirm('Are you absolutely sure? This cannot be undone.')"
+                    class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors flex items-center space-x-2">
+              <i class="fas fa-trash"></i>
+              <span>Delete Permanently</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <input type="submit" class="btn btn-primary" value="Confirm">
+  <!-- Alternative Actions -->
+  <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Alternative Actions</h3>
+    <p class="text-gray-600 dark:text-gray-400 mb-4">
+      Instead of deleting, consider these safer alternatives:
+    </p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% if student.status == 'active' %}
+      <a href="{% url 'students:student_update' student.pk %}" 
+         class="p-4 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-ban text-amber-600 dark:text-amber-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Deactivate Student</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Make student inactive instead</p>
+          </div>
+        </div>
+      </a>
+      {% else %}
+      <a href="{% url 'students:student_update' student.pk %}" 
+         class="p-4 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-edit text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Update Information</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Edit student details</p>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+      
+      <a href="{% url 'students:student_update' student.pk %}" 
+         class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-archive text-gray-600 dark:text-gray-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Archive Record</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Mark as graduated or withdrawn</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
 
-</form>
-
-
-{% endblock content %}
+<script>
+  // Double confirmation for delete
+  const deleteButton = document.querySelector('button[type="submit"]');
+  if (deleteButton) {
+    deleteButton.addEventListener('click', function(e) {
+      if (!confirm('⚠️ FINAL WARNING: This will permanently delete the student record and cannot be undone. Are you absolutely sure?')) {
+        e.preventDefault();
+      }
+    });
+  }
+</script>
+{% endblock %}

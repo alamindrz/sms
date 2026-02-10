@@ -172,15 +172,6 @@ class TermDeleteView(LoginRequiredMixin, DeleteView):
         return super(TermDeleteView, self).delete(request, *args, **kwargs)
 
 
-class ClassListView(LoginRequiredMixin, SuccessMessageMixin, ListView):
-    model = StudentClass
-    template_name = "corecode/class_list.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["form"] = StudentClassForm()
-        return context
-
 
 class ClassCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = StudentClass

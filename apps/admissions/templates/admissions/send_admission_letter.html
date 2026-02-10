@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Send Admission Letter - EduSys Pro{% endblock %}
+{% block page_title %}Send Admission Letter{% endblock %}
+{% block page_subtitle %}{{ application.application_number }} - {{ application.full_name }}{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:application_detail' application.pk %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Application
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Application Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Admission Letter</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Send admission offer to guardian</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                Approved
+            </span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Student</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ application.full_name }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Guardian</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ application.guardian_name }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Email</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ application.guardian_email }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Admission Class</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ application.admission_class|default:"Not specified" }}</p>
+            </div>
+        </div>
+        
+        {% if application.admission_letter_sent %}
+        <div class="mt-4 p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                <p class="text-sm font-medium text-green-800 dark:text-green-300">
+                    Admission letter sent on {{ application.admission_letter_sent_date|date:"d M Y" }}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Email Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="letterForm">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Email Preview -->
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Email Preview</h4>
+                    
+                    <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/20">
+                        <div class="mb-3">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">To:</p>
+                            <p class="font-medium text-gray-800 dark:text-white">{{ application.guardian_name }} &lt;{{ application.guardian_email }}&gt;</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Subject:</p>
+                            <p class="font-medium text-gray-800 dark:text-white">
+                                Admission Offer - {{ application.admission_session }} - {{ application.admission_class|default:"Class" }}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Message Preview:</p>
+                            <div class="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-700 dark:text-gray-300">
+                                <p class="font-medium mb-2">Dear {{ application.guardian_name }},</p>
+                                <p class="mb-2">Congratulations! We are pleased to inform you that {{ application.full_name }} has been offered admission to {{ application.admission_class|default:"our school" }} for the {{ application.admission_session }} academic session.</p>
+                                <p>Please find the admission letter attached with this email.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Options -->
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Email Options</h4>
+                    
+                    <div class="space-y-4">
+                        <!-- Include Fee Structure -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input type="checkbox" name="include_fee_structure" id="include_fee_structure" 
+                                       class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div class="ml-3">
+                                <label for="include_fee_structure" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Include Fee Structure
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Attach the current fee structure for the admission class
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Include Payment Instructions -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input type="checkbox" name="include_payment_instructions" id="include_payment_instructions" 
+                                       class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
+                            </div>
+                            <div class="ml-3">
+                                <label for="include_payment_instructions" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Include Payment Instructions
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Add bank details and payment deadlines
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Send Copy to Guardian -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input type="checkbox" name="send_copy_to_guardian" id="send_copy_to_guardian" 
+                                       class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div class="ml-3">
+                                <label for="send_copy_to_guardian" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Send Copy to Additional Guardian Email
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Send to an additional email address if provided
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Message -->
+                <div>
+                    <label for="{{ form.custom_message.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Custom Message (Optional)
+                    </label>
+                    {{ form.custom_message }}
+                    {% if form.custom_message.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.custom_message.help_text }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        This message will be added to the standard admission letter
+                    </p>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-paper-plane text-blue-500 mr-1"></i>
+                            Email will be sent to {{ application.guardian_email }}
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="{% url 'admissions:application_detail' application.pk %}" 
+                               class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-paper-plane mr-2"></i>Send Admission Letter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Letter Templates -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Letter Templates</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button type="button" 
+                    class="p-4 text-left rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                    onclick="loadTemplate('standard')">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-file-alt text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">Standard Letter</h4>
+                </div>
+                <p class="text-sm text-blue-700 dark:text-blue-400">
+                    Standard admission offer with basic information
+                </p>
+            </button>
+            
+            <button type="button" 
+                    class="p-4 text-left rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                    onclick="loadTemplate('detailed')">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-file-invoice text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Detailed Letter</h4>
+                </div>
+                <p class="text-sm text-green-700 dark:text-green-400">
+                    Includes fee structure and payment schedule
+                </p>
+            </button>
+        </div>
+    </div>
+
+    <!-- Previous Letters -->
+    {% if application.admission_letter_sent %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Previous Letters</h3>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-paper-plane text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">Admission Letter</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Sent on {{ application.admission_letter_sent_date|date:"d M Y H:i" }}
+                        </p>
+                    </div>
+                </div>
+                <button type="button" 
+                        class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                    View
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const letterForm = document.getElementById('letterForm');
+    const customMessage = document.getElementById('{{ form.custom_message.id_for_label }}');
+    
+    // Load template function
+    window.loadTemplate = function(templateType) {
+        let message = '';
+        
+        if (templateType === 'standard') {
+            message = `Dear {{ application.guardian_name }},
+
+Congratulations! We are pleased to inform you that {{ application.full_name }} has been offered admission to {{ application.admission_class|default:"our school" }} for the {{ application.admission_session }} academic session.
+
+This offer is based on your application and our admission criteria. We believe {{ application.full_name }} will thrive in our academic environment.
+
+Please complete the admission formalities by the specified deadline to secure this placement.
+
+We look forward to welcoming {{ application.full_name }} to our school community.
+
+Best regards,
+Admissions Office
+{{ settings.SCHOOL_NAME }}`;
+        } else if (templateType === 'detailed') {
+            message = `Dear {{ application.guardian_name }},
+
+ADMISSION OFFER - {{ application.admission_session }} ACADEMIC SESSION
+
+We are delighted to offer {{ application.full_name }} admission to {{ application.admission_class|default:"our school" }} for the {{ application.admission_session }} academic session.
+
+ADMISSION DETAILS:
+- Student: {{ application.full_name }}
+- Admission Class: {{ application.admission_class|default:"To be assigned" }}
+- Academic Session: {{ application.admission_session }}
+- Application Number: {{ application.application_number }}
+
+NEXT STEPS:
+1. Accept this offer by completing the admission form
+2. Pay the admission fee within 14 days
+3. Submit required documents
+4. Attend orientation session
+
+FEE STRUCTURE:
+The detailed fee structure for {{ application.admission_class|default:"the class" }} will be provided separately.
+
+This offer will remain valid for 30 days from the date of this letter. Please confirm your acceptance by the deadline to secure this placement.
+
+We are excited about the prospect of {{ application.full_name }} joining our school community and contributing to our vibrant learning environment.
+
+Congratulations once again!
+
+Sincerely,
+Admissions Committee
+{{ settings.SCHOOL_NAME }}`;
+        }
+        
+        if (customMessage) {
+            customMessage.value = message;
+            // Trigger input event for any listeners
+            customMessage.dispatchEvent(new Event('input'));
+        }
+    };
+    
+    // Form submission
+    letterForm.addEventListener('submit', function(e) {
+        const studentName = '{{ application.full_name|escapejs }}';
+        const guardianName = '{{ application.guardian_name|escapejs }}';
+        
+        if (!confirm(`Send admission letter to ${guardianName} for ${studentName}?`)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = letterForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Character counter for custom message
+    if (customMessage) {
+        const charCounter = document.createElement('div');
+        charCounter.className = 'text-xs text-gray-500 dark:text-gray-400 mt-1 text-right';
+        charCounter.id = 'charCounter';
+        customMessage.parentNode.appendChild(charCounter);
+        
+        function updateCharCounter() {
+            const length = customMessage.value.length;
+            charCounter.textContent = `${length} characters`;
+            
+            if (length > 1000) {
+                charCounter.classList.add('text-red-600', 'dark:text-red-400');
+                charCounter.classList.remove('text-gray-500', 'dark:text-gray-400');
+            } else {
+                charCounter.classList.remove('text-red-600', 'dark:text-red-400');
+                charCounter.classList.add('text-gray-500', 'dark:text-gray-400');
+            }
+        }
+        
+        customMessage.addEventListener('input', updateCharCounter);
+        updateCharCounter(); // Initial count
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

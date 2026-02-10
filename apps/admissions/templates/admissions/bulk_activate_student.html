@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Activate Students - EduSys Pro{% endblock %}
+{% block page_title %}Bulk Activate Students{% endblock %}
+{% block page_subtitle %}Activate multiple students at once{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:inactive_students' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Inactive Students
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Instructions -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-start mb-4">
+            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-bolt text-green-600 dark:text-green-400"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Bulk Activation</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Activate multiple students at once. Only students with all requirements (guardian, class, session) can be activated.
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Ready for Activation</h4>
+                </div>
+                <ul class="text-xs text-green-700 dark:text-green-400 space-y-1">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Must have guardian assigned</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Must have class assigned</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Must have academic session</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">After Activation</h4>
+                </div>
+                <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                    <li class="flex items-start">
+                        <i class="fas fa-arrow-right text-xs mt-1 mr-2"></i>
+                        <span>Appear in class rosters</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-arrow-right text-xs mt-1 mr-2"></i>
+                        <span>Included in fee billing</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-arrow-right text-xs mt-1 mr-2"></i>
+                        <span>Can attend classes</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Activation Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="bulkActivateForm">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Students Selection -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Select Students *
+                        </label>
+                        <div class="flex space-x-2">
+                            <button type="button" id="selectReady" class="text-xs text-green-600 dark:text-green-400 hover:underline">
+                                Select Ready Only
+                            </button>
+                            <button type="button" id="selectAll" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                Select All
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Students Table -->
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                                    <tr>
+                                        <th class="w-12 px-4 py-3">
+                                            <input type="checkbox" id="masterCheckbox" class="rounded border-gray-300 dark:border-gray-600">
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Student
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Requirements
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for student in form.fields.students.queryset %}
+                                    <tr class="student-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                                        data-ready="{{ student.is_activatable|yesno:'true,false' }}">
+                                        <td class="px-4 py-3">
+                                            <input type="checkbox" 
+                                                   name="students" 
+                                                   value="{{ student.pk }}" 
+                                                   class="student-checkbox rounded border-gray-300 dark:border-gray-600"
+                                                   data-ready="{{ student.is_activatable|yesno:'true,false' }}">
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                {{ student.student_number }}
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ student.full_name }}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            {% if student.is_activatable %}
+                                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                                Ready
+                                            </span>
+                                            {% else %}
+                                            <span class="px-2 py-1 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                                                Not Ready
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex flex-wrap gap-1">
+                                                {% if not student.guardian %}
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                                    <i class="fas fa-user-times text-xs mr-0.5"></i>
+                                                </span>
+                                                {% endif %}
+                                                {% if not student.current_class %}
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                                                    <i class="fas fa-chalkboard-teacher text-xs mr-0.5"></i>
+                                                </span>
+                                                {% endif %}
+                                                {% if not student.current_session %}
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                                    <i class="fas fa-calendar text-xs mr-0.5"></i>
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="px-4 py-8 text-center">
+                                            <div class="text-gray-500 dark:text-gray-400">
+                                                <i class="fas fa-user-check text-2xl mb-2"></i>
+                                                <p>No students available for activation</p>
+                                                <p class="text-xs mt-1">All students are already active or need requirements</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+                        <span id="selectedCount">0 students selected</span>
+                        <span id="readyCount">0 ready for activation</span>
+                    </div>
+                    {% if form.students.errors %}
+                    <div class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.students.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Activation Options -->
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Activation Options</h4>
+                    
+                    <div class="space-y-4">
+                        <!-- Send Notifications -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input type="checkbox" name="send_notifications" id="send_notifications" 
+                                       class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
+                            </div>
+                            <div class="ml-3">
+                                <label for="send_notifications" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Send activation notifications
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Guardians will receive email notification about activation
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Generate Credentials -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input type="checkbox" name="generate_credentials" id="generate_credentials" 
+                                       class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
+                            </div>
+                            <div class="ml-3">
+                                <label for="generate_credentials" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Generate parent portal credentials
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Create login credentials for parent portal access
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Assign Default Fees -->
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input type="checkbox" name="assign_fees" id="assign_fees" 
+                                       class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div class="ml-3">
+                                <label for="assign_fees" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Assign default fee structure
+                                </label>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Automatically assign standard fees for the class
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activation Notes -->
+                <div>
+                    <label for="{{ form.activation_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Activation Notes (Optional)
+                    </label>
+                    {{ form.activation_notes }}
+                    {% if form.activation_notes.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.activation_notes.help_text }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        These notes will be added to each student's activation record
+                    </p>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+                            <span id="actionWarning">Select students to activate</span>
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="{% url 'admissions:inactive_students' %}" 
+                               class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    id="submitButton"
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled>
+                                <i class="fas fa-bolt mr-2"></i>Activate Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Activation Statistics</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ form.fields.students.queryset.count }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Available</p>
+                </div>
+            </div>
+            
+            <div class="p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-800 dark:text-green-300" id="readyStats">0</p>
+                    <p class="text-sm text-green-700 dark:text-green-400">Ready Now</p>
+                </div>
+            </div>
+            
+            <div class="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-amber-800 dark:text-amber-300" id="notReadyStats">0</p>
+                    <p class="text-sm text-amber-700 dark:text-amber-400">Needs Setup</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const masterCheckbox = document.getElementById('masterCheckbox');
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    const selectReadyBtn = document.getElementById('selectReady');
+    const selectAllBtn = document.getElementById('selectAll');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const readyCountSpan = document.getElementById('readyCount');
+    const actionWarning = document.getElementById('actionWarning');
+    const submitButton = document.getElementById('submitButton');
+    const readyStats = document.getElementById('readyStats');
+    const notReadyStats = document.getElementById('notReadyStats');
+    
+    // Calculate initial stats
+    let totalReady = 0;
+    let totalNotReady = 0;
+    
+    studentCheckboxes.forEach(checkbox => {
+        if (checkbox.dataset.ready === 'true') {
+            totalReady++;
+        } else {
+            totalNotReady++;
+        }
+    });
+    
+    readyStats.textContent = totalReady;
+    notReadyStats.textContent = totalNotReady;
+    
+    // Update selected count and button states
+    function updateSelection() {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const selectedCount = selected.length;
+        let readySelected = 0;
+        
+        selected.forEach(checkbox => {
+            if (checkbox.dataset.ready === 'true') {
+                readySelected++;
+            }
+        });
+        
+        // Update counts
+        selectedCountSpan.textContent = `${selectedCount} student${selectedCount !== 1 ? 's' : ''} selected`;
+        readyCountSpan.textContent = `${readySelected} ready for activation`;
+        
+        // Update warning message
+        if (selectedCount === 0) {
+            actionWarning.textContent = 'Select students to activate';
+            submitButton.disabled = true;
+        } else if (readySelected === 0) {
+            actionWarning.textContent = 'No ready students selected. Students need guardian, class, and session.';
+            submitButton.disabled = true;
+        } else {
+            const notReadyCount = selectedCount - readySelected;
+            if (notReadyCount > 0) {
+                actionWarning.textContent = `${readySelected} ready, ${notReadyCount} need setup (will be skipped)`;
+            } else {
+                actionWarning.textContent = `All ${readySelected} selected students are ready`;
+            }
+            submitButton.disabled = false;
+        }
+        
+        // Update master checkbox
+        if (masterCheckbox) {
+            const allChecked = Array.from(studentCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(studentCheckboxes).some(cb => cb.checked);
+            masterCheckbox.checked = allChecked;
+            masterCheckbox.indeterminate = someChecked && !allChecked;
+        }
+    }
+    
+    // Master checkbox
+    if (masterCheckbox) {
+        masterCheckbox.addEventListener('change', function() {
+            studentCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelection();
+        });
+    }
+    
+    // Individual checkboxes
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+    
+    // Select ready only button
+    selectReadyBtn.addEventListener('click', function() {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = checkbox.dataset.ready === 'true';
+        });
+        updateSelection();
+    });
+    
+    // Select all button
+    selectAllBtn.addEventListener('click', function() {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        if (masterCheckbox) masterCheckbox.checked = true;
+        updateSelection();
+    });
+    
+    // Form submission
+    const form = document.getElementById('bulkActivateForm');
+    form.addEventListener('submit', function(e) {
+        const selected = document.querySelectorAll('.student-checkbox:checked');
+        const readySelected = Array.from(selected).filter(cb => cb.dataset.ready === 'true');
+        
+        if (readySelected.length === 0) {
+            e.preventDefault();
+            alert('No ready students selected. Students need guardian, class, and session to activate.');
+            return;
+        }
+        
+        const notReadyCount = selected.length - readySelected.length;
+        let confirmMessage = `Activate ${readySelected.length} student(s)?`;
+        
+        if (notReadyCount > 0) {
+            confirmMessage = `Activate ${readySelected.length} ready student(s)? ${notReadyCount} student(s) will be skipped as they need guardian, class, or session.`;
+        }
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activating...';
+        submitButton.disabled = true;
+    });
+    
+    // Initialize selection
+    updateSelection();
+});
+</script>
+{% endblock %}
+{% endblock %}

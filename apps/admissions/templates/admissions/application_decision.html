@@ -1,213 +1,515 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load admission_filters %}
 
-{% block title %}Make Decision - {{ application.application_number }}{% endblock %}
+{% block title %}Admission Decision - EduSys Pro{% endblock %}
+{% block page_title %}Make Admission Decision{% endblock %}
+{% block page_subtitle %}{{ object.application_number }} - {{ object.full_name }}{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:application_detail' object.pk %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Details
+    </a>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-gavel"></i>
-                        Make Admission Decision - {{ application.application_number }}
-                    </h3>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Decision Form -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Application Status -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Application Status</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Ready for admission decision</p>
                 </div>
+                <span class="px-3 py-1 rounded-full text-sm font-medium {{ object.status|get_status_class }}">
+                    {{ object.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Student</p>
+                    <p class="font-medium text-gray-800 dark:text-white">{{ object.full_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Applied for Class</p>
+                    <p class="font-medium text-gray-800 dark:text-white">{{ object.admission_class|default:"Not specified" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Review Date</p>
+                    <p class="font-medium text-gray-800 dark:text-white">
+                        {% if object.review_date %}
+                        {{ object.review_date|date:"d M Y" }} by {{ object.reviewed_by }}
+                        {% else %}
+                        Not reviewed
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Age</p>
+                    <p class="font-medium text-gray-800 dark:text-white">{{ object.age }} years</p>
+                </div>
+            </div>
+            
+            <!-- Class Capacity Warning -->
+            {% if class_capacity.is_full %}
+            <div class="mt-4 p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                    <p class="text-sm font-medium text-red-800 dark:text-red-300">
+                        Class is at full capacity! ({{ class_capacity.current }}/{{ class_capacity.max }})
+                    </p>
+                </div>
+                <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                    Consider waitlisting or rejecting this application.
+                </p>
+            </div>
+            {% elif class_capacity.available < 5 %}
+            <div class="mt-4 p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-amber-500 mr-2"></i>
+                    <p class="text-sm font-medium text-amber-800 dark:text-amber-300">
+                        Class is nearly full ({{ class_capacity.available }} seats available)
+                    </p>
+                </div>
+            </div>
+            {% else %}
+            <div class="mt-4 p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <p class="text-sm font-medium text-green-800 dark:text-green-300">
+                        Class capacity: {{ class_capacity.current }}/{{ class_capacity.max }} ({{ class_capacity.available }} available)
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Decision Form -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <form method="post" id="decisionForm">
+                {% csrf_token %}
                 
-                <div class="card-body">
-                    <!-- Application Summary -->
-                    <div class="card card-secondary mb-4">
-                        <div class="card-header">
-                            <h4 class="card-title">Application Summary</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Applicant:</strong> {{ application.full_name }}<br>
-                                    <strong>Gender:</strong> {{ application.gender }}<br>
-                                    <strong>Age:</strong> {{ application.age }} years<br>
-                                    <strong>Applied For:</strong> {{ application.admission_class }} - {{ application.admission_session }}
+                <!-- Decision Options -->
+                <div class="mb-6">
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-4">Select Decision</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Approve -->
+                        <div class="decision-option">
+                            <input type="radio" name="decision" id="decision_approve" value="approve" 
+                                   class="hidden peer" required>
+                            <label for="decision_approve" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 transition-colors">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-2">
+                                        <i class="fas fa-check text-green-600 dark:text-green-400 text-xl"></i>
+                                    </div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Approve</h5>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Accept student for admission
+                                    </p>
                                 </div>
-                                <div class="col-md-6">
-                                    <strong>Guardian:</strong> {{ application.guardian_name }}<br>
-                                    <strong>Phone:</strong> {{ application.guardian_phone }}<br>
-                                    <strong>Email:</strong> {{ application.guardian_email }}<br>
-                                    <strong>Payment:</strong> 
-                                    {% if application.payment_verified %}
-                                        <span class="badge bg-success">Verified</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Not Verified</span>
-                                    {% endif %}
+                            </label>
+                        </div>
+                        
+                        <!-- Waitlist -->
+                        <div class="decision-option">
+                            <input type="radio" name="decision" id="decision_waitlist" value="waitlist" 
+                                   class="hidden peer">
+                            <label for="decision_waitlist" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600 transition-colors">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-2">
+                                        <i class="fas fa-list-ol text-purple-600 dark:text-purple-400 text-xl"></i>
+                                    </div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Waitlist</h5>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Place on waitlist for later
+                                    </p>
                                 </div>
-                            </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Reject -->
+                        <div class="decision-option">
+                            <input type="radio" name="decision" id="decision_reject" value="reject" 
+                                   class="hidden peer">
+                            <label for="decision_reject" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 transition-colors">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-2">
+                                        <i class="fas fa-times text-red-600 dark:text-red-400 text-xl"></i>
+                                    </div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Reject</h5>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Decline admission application
+                                    </p>
+                                </div>
+                            </label>
                         </div>
                     </div>
-                    
-                    <!-- Class Capacity Warning -->
-                    {% if class_capacity.is_full %}
-                    <div class="alert alert-danger">
-                        <h5><i class="icon fas fa-exclamation-triangle"></i> Class at Full Capacity</h5>
-                        <p>
-                            {{ application.admission_class }} currently has {{ class_capacity.current }} students 
-                            out of {{ class_capacity.max }} capacity. No seats available.
-                        </p>
-                        <p>
-                            Consider waitlisting this application or assigning to a different class.
-                        </p>
-                    </div>
-                    {% elif class_capacity.available <= 5 %}
-                    <div class="alert alert-warning">
-                        <h5><i class="icon fas fa-exclamation-circle"></i> Limited Capacity</h5>
-                        <p>
-                            Only {{ class_capacity.available }} seats remaining in {{ application.admission_class }}.
-                        </p>
-                    </div>
+                </div>
+
+                <!-- Decision Notes -->
+                <div class="mb-6">
+                    <label for="{{ form.decision_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Decision Notes
+                    </label>
+                    {{ form.decision_notes }}
+                    {% if form.decision_notes.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.decision_notes.help_text }}</p>
+                    {% endif %}
+                    {% if form.decision_notes.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.decision_notes.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Rejection Reason (conditionally shown) -->
+                <div id="rejectionSection" class="mb-6 hidden">
+                    <label for="{{ form.rejection_reason.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Rejection Reason
+                    </label>
+                    {{ form.rejection_reason }}
+                    {% if form.rejection_reason.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.rejection_reason.help_text }}</p>
+                    {% endif %}
+                    {% if form.rejection_reason.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.rejection_reason.errors }}</div>
                     {% endif %}
                     
-                    <!-- Decision Form -->
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="card card-primary">
-                            <div class="card-header">
-                                <h4 class="card-title">Decision</h4>
-                            </div>
-                            <div class="card-body">
-                                <!-- Decision Choice -->
-                                <div class="form-group">
-                                    {{ form.decision.label_tag }}
-                                    <div class="decision-choices mt-2">
-                                        {% for choice in form.decision %}
-                                        <div class="form-check form-check-inline">
-                                            {{ choice.tag }}
-                                            <label class="form-check-label" for="{{ choice.id_for_label }}">
-                                                {{ choice.choice_label }}
-                                            </label>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                
-                                <!-- Dynamic fields based on decision -->
-                                <div id="approve-fields" style="display: none;">
-                                    <div class="form-group">
-                                        {{ form.decision_notes.label_tag }}
-                                        {{ form.decision_notes }}
-                                    </div>
-                                </div>
-                                
-                                <div id="reject-fields" style="display: none;">
-                                    <div class="form-group">
-                                        {{ form.rejection_reason.label_tag }}
-                                        {{ form.rejection_reason }}
-                                    </div>
-                                    <div class="form-group">
-                                        {{ form.rejection_details.label_tag }}
-                                        {{ form.rejection_details }}
-                                        <small class="text-muted">This will be shared with the guardian</small>
-                                    </div>
-                                    <div class="form-group">
-                                        {{ form.decision_notes.label_tag }}
-                                        {{ form.decision_notes }}
-                                    </div>
-                                </div>
-                                
-                                <div id="waitlist-fields" style="display: none;">
-                                    <div class="form-group">
-                                        {{ form.waitlist_notes.label_tag }}
-                                        {{ form.waitlist_notes }}
-                                    </div>
-                                    <div class="form-group">
-                                        {{ form.decision_notes.label_tag }}
-                                        {{ form.decision_notes }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Previous Decisions -->
-                        {% if decision_logs %}
-                        <div class="card card-secondary mt-3">
-                            <div class="card-header">
-                                <h4 class="card-title">Decision History</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Action</th>
-                                                <th>By</th>
-                                                <th>Notes</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for log in decision_logs %}
-                                            <tr>
-                                                <td>{{ log.created_at|date:"M d, Y H:i" }}</td>
-                                                <td><span class="badge bg-{{ application.get_status_badge_class }}">{{ log.action }}</span></td>
-                                                <td>{{ log.staff }}</td>
-                                                <td>{{ log.notes|truncatechars:50 }}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="mt-4">
+                        <label for="{{ form.rejection_details.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Rejection Details (for guardian)
+                        </label>
+                        {{ form.rejection_details }}
+                        {% if form.rejection_details.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.rejection_details.help_text }}</p>
                         {% endif %}
-                        
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-check"></i> Submit Decision
-                            </button>
-                            <a href="{% url 'admissions:application_detail' application.pk %}" class="btn btn-default">Cancel</a>
-                        </div>
-                    </form>
+                    </div>
                 </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-3">
+                    <a href="{% url 'admissions:application_detail' object.pk %}" 
+                       class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-bullhorn mr-2"></i>Submit Decision
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Previous Decisions -->
+        {% if decision_logs %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Decision History</h3>
+            <div class="space-y-4">
+                {% for log in decision_logs %}
+                <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full 
+                        {% if log.action == 'APPROVE_APPLICATION' %}bg-green-100 dark:bg-green-900/30
+                        {% elif log.action == 'REJECT_APPLICATION' %}bg-red-100 dark:bg-red-900/30
+                        {% elif log.action == 'WAITLIST_APPLICATION' %}bg-purple-100 dark:bg-purple-900/30
+                        {% else %}bg-gray-100 dark:bg-gray-900/30{% endif %} 
+                        flex items-center justify-center mr-3">
+                        <i class="fas 
+                            {% if log.action == 'APPROVE_APPLICATION' %}fa-check text-green-600 dark:text-green-400
+                            {% elif log.action == 'REJECT_APPLICATION' %}fa-times text-red-600 dark:text-red-400
+                            {% elif log.action == 'WAITLIST_APPLICATION' %}fa-list-ol text-purple-600 dark:text-purple-400
+                            {% else %}fa-history text-gray-600 dark:text-gray-400{% endif %} 
+                            text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between">
+                            <p class="text-sm font-medium text-gray-800 dark:text-white">
+                                {% if log.action == 'APPROVE_APPLICATION' %}
+                                Application Approved
+                                {% elif log.action == 'REJECT_APPLICATION' %}
+                                Application Rejected
+                                {% elif log.action == 'WAITLIST_APPLICATION' %}
+                                Application Waitlisted
+                                {% else %}
+                                {{ log.action|title }}
+                                {% endif %}
+                            </p>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ log.created_at|date:"d M Y H:i" }}</span>
+                        </div>
+                        {% if log.notes %}
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ log.notes }}</p>
+                        {% endif %}
+                        <div class="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span>by {{ log.staff }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Student & Class Info -->
+    <div class="space-y-6">
+        <!-- Student Photo & Info -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col items-center mb-4">
+                {% if object.student_photo %}
+                <img class="w-24 h-24 rounded-full object-cover mb-3 border-4 border-white dark:border-gray-700 shadow" 
+                     src="{{ object.student_photo.url }}" 
+                     alt="{{ object.full_name }}">
+                {% else %}
+                <div class="w-24 h-24 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-3 border-4 border-white dark:border-gray-700 shadow">
+                    <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-3xl"></i>
+                </div>
+                {% endif %}
+                <h4 class="text-lg font-bold text-gray-800 dark:text-white">{{ object.full_name }}</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ object.age }} years old</p>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Guardian</p>
+                    <p class="font-medium text-gray-800 dark:text-white">{{ object.guardian_name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Contact</p>
+                    <p class="font-medium text-gray-800 dark:text-white">{{ object.guardian_phone }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ object.guardian_email }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Applied On</p>
+                    <p class="font-medium text-gray-800 dark:text-white">{{ object.application_date|date:"d M Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Capacity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Class Capacity</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-600 dark:text-gray-400">Applied Class</span>
+                        <span class="font-medium text-gray-800 dark:text-white">{{ object.admission_class|default:"Not specified" }}</span>
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
+                        <div class="bg-green-600 h-2.5 rounded-full" 
+                             style="width: {% widthratio class_capacity.current class_capacity.max 100 %}%">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <span>{{ class_capacity.current }} enrolled</span>
+                        <span>{{ class_capacity.max }} capacity</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ class_capacity.available }}</p>
+                        <p class="text-xs text-green-800 dark:text-green-300">Seats Available</p>
+                    </div>
+                    
+                    <div class="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ class_capacity.current }}</p>
+                        <p class="text-xs text-blue-800 dark:text-blue-300">Currently Enrolled</p>
+                    </div>
+                </div>
+                                {% if class_capacity.is_full %}
+                <div class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        <p class="text-sm font-medium text-red-800 dark:text-red-300">Class is full</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Review Notes -->
+        {% if object.review_notes %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Review Notes</h3>
+            <div class="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ object.review_notes }}</p>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Reviewed by {{ object.reviewed_by }} on {{ object.review_date|date:"d M Y" }}
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h3>
+            <div class="space-y-3">
+                <a href="{% url 'admissions:application_detail' object.pk %}" 
+                   class="block w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/30 transition-colors text-center">
+                    <i class="fas fa-eye mr-2"></i>View Full Details
+                </a>
+                <a href="{% url 'admissions:application_review' object.pk %}" 
+                   class="block w-full px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-center">
+                    <i class="fas fa-search mr-2"></i>Update Review
+                </a>
+                {% if object.admission_class %}
+                <a href="#" 
+                   class="block w-full px-4 py-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors text-center">
+                    <i class="fas fa-users mr-2"></i>View Class Roster
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %
-
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const decisionRadios = document.querySelectorAll('input[name="decision"]');
-    const approveFields = document.getElementById('approve-fields');
-    const rejectFields = document.getElementById('reject-fields');
-    const waitlistFields = document.getElementById('waitlist-fields');
+    // Toggle rejection section when reject is selected
+    const rejectRadio = document.getElementById('decision_reject');
+    const rejectionSection = document.getElementById('rejectionSection');
     
-    function showRelevantFields() {
-        // Hide all fields first
-        [approveFields, rejectFields, waitlistFields].forEach(field => {
-            if (field) field.style.display = 'none';
+    if (rejectRadio && rejectionSection) {
+        rejectRadio.addEventListener('change', function() {
+            if (this.checked) {
+                rejectionSection.classList.remove('hidden');
+                // Focus on rejection reason select
+                const rejectionReason = rejectionSection.querySelector('select');
+                if (rejectionReason) {
+                    rejectionReason.focus();
+                }
+            }
         });
         
-        // Show relevant fields based on selection
-        const selected = document.querySelector('input[name="decision"]:checked');
-        if (selected) {
-            if (selected.value === 'approve' && approveFields) {
-                approveFields.style.display = 'block';
-            } else if (selected.value === 'reject' && rejectFields) {
-                rejectFields.style.display = 'block';
-            } else if (selected.value === 'waitlist' && waitlistFields) {
-                waitlistFields.style.display = 'block';
+        // Also check other radios to hide rejection section
+        document.querySelectorAll('input[name="decision"]').forEach(radio => {
+            if (radio.id !== 'decision_reject') {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        rejectionSection.classList.add('hidden');
+                    }
+                });
             }
-        }
+        });
     }
     
-    // Add event listeners
-    decisionRadios.forEach(radio => {
-        radio.addEventListener('change', showRelevantFields);
-    });
+    // Form submission handler
+    const form = document.getElementById('decisionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selectedDecision = document.querySelector('input[name="decision"]:checked');
+            if (!selectedDecision) {
+                e.preventDefault();
+                alert('Please select a decision (Approve, Waitlist, or Reject)');
+                return;
+            }
+            
+            if (selectedDecision.value === 'reject') {
+                const rejectionReason = document.querySelector('select[name="rejection_reason"]');
+                if (rejectionReason && !rejectionReason.value) {
+                    e.preventDefault();
+                    alert('Please select a rejection reason');
+                    rejectionReason.focus();
+                    return;
+                }
+            }
+            
+            // Show confirmation message based on decision
+            const decision = selectedDecision.value;
+            const studentName = '{{ object.full_name|escapejs }}';
+            const confirmMessages = {
+                'approve': `Are you sure you want to APPROVE ${studentName}'s application? This will send an admission letter.`,
+                'waitlist': `Are you sure you want to WAITLIST ${studentName}'s application?`,
+                'reject': `Are you sure you want to REJECT ${studentName}'s application? This action cannot be undone.`
+            };
+            
+            if (!confirm(confirmMessages[decision])) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Disable button and show loading
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
     
-    // Initial show
-    showRelevantFields();
+    // Highlight selected decision
+    document.querySelectorAll('.decision-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.decision-option label').forEach(label => {
+                label.classList.remove('ring-2', 'ring-offset-2');
+            });
+            if (this.checked) {
+                const label = this.nextElementSibling;
+                if (label) {
+                    if (this.value === 'approve') {
+                        label.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+                    } else if (this.value === 'waitlist') {
+                        label.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2');
+                    } else if (this.value === 'reject') {
+                        label.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+                    }
+                }
+            }
+        });
+        
+        // Trigger change on page load if already checked
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
 });
 </script>
+
+<style>
+/* Form styling */
+#decisionForm textarea,
+#decisionForm select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #1f2937;
+}
+
+.dark #decisionForm textarea,
+.dark #decisionForm select {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #f3f4f6;
+}
+
+#decisionForm textarea:focus,
+#decisionForm select:focus {
+    outline: none;
+    ring-width: 2px;
+    ring-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+/* Decision option styling */
+.decision-option label {
+    transition: all 0.2s ease;
+}
+
+.decision-option input:checked + label {
+    transform: scale(1.02);
+}
+</style>
+{% endblock %}
 {% endblock %}

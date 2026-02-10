@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Activate Student{% endblock %}
+{% block page_subtitle %}Complete student activation requirements{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'students:student_detail' student.pk %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-arrow-left"></i>
+  <span>Back to Profile</span>
+</a>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Students</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_detail' student.pk %}">{{ student.full_name }}</a></li>
+<li class="breadcrumb-item active">Activate</li>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <!-- Activation Progress -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Activation Progress</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        Complete all requirements to activate this student
+      </p>
+    </div>
+    <div class="p-6">
+      <!-- Progress Bar -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Activation Progress</span>
+          <span class="text-sm font-bold text-gray-800 dark:text-white">{{ progress }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+          <div class="bg-indigo-600 h-3 rounded-full transition-all duration-300" style="width: {{ progress }}%"></div>
+        </div>
+      </div>
+
+      <!-- Requirements Checklist -->
+      <div class="space-y-4">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Activation Requirements</h4>
+        
+        <!-- Guardian Requirement -->
+        <div class="flex items-center justify-between p-4 border rounded-lg {% if student.guardian %}border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20{% else %}border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20{% endif %}">
+          <div class="flex items-center">
+            <div class="w-10 h-10 rounded-lg {% if student.guardian %}bg-green-100 dark:bg-green-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %} flex items-center justify-center mr-4">
+              <i class="fas {% if student.guardian %}fa-user-check text-green-600 dark:text-green-400{% else %}fa-user-times text-red-600 dark:text-red-400{% endif %}"></i>
+            </div>
+            <div>
+              <h5 class="font-medium text-gray-800 dark:text-white">Guardian/Parent</h5>
+              <p class="text-sm {% if student.guardian %}text-green-700 dark:text-green-400{% else %}text-red-700 dark:text-red-400{% endif %}">
+                {% if student.guardian %}
+                  {{ student.guardian.full_name }}
+                {% else %}
+                  No guardian assigned
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          <div>
+            {% if student.guardian %}
+            <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+              Complete
+            </span>
+            {% else %}
+            <a href="{% url 'students:guardian_create' %}?student={{ student.pk }}" 
+               class="px-3 py-1 text-xs font-medium rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
+              Assign Guardian
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Class Requirement -->
+        <div class="flex items-center justify-between p-4 border rounded-lg {% if student.current_class %}border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20{% else %}border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20{% endif %}">
+          <div class="flex items-center">
+            <div class="w-10 h-10 rounded-lg {% if student.current_class %}bg-green-100 dark:bg-green-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %} flex items-center justify-center mr-4">
+              <i class="fas {% if student.current_class %}fa-graduation-cap text-green-600 dark:text-green-400{% else %}fa-graduation-cap text-red-600 dark:text-red-400{% endif %}"></i>
+            </div>
+            <div>
+              <h5 class="font-medium text-gray-800 dark:text-white">Class Assignment</h5>
+              <p class="text-sm {% if student.current_class %}text-green-700 dark:text-green-400{% else %}text-red-700 dark:text-red-400{% endif %}">
+                {% if student.current_class %}
+                  {{ student.current_class.name }} (Year {{ student.current_class.year }})
+                {% else %}
+                  No class assigned
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          <div>
+            {% if student.current_class %}
+            <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+              Complete
+            </span>
+            {% else %}
+            <button onclick="assignClass()" 
+                    class="px-3 py-1 text-xs font-medium rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
+              Assign Class
+            </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Session Requirement -->
+        <div class="flex items-center justify-between p-4 border rounded-lg {% if student.current_session %}border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20{% else %}border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20{% endif %}">
+          <div class="flex items-center">
+            <div class="w-10 h-10 rounded-lg {% if student.current_session %}bg-green-100 dark:bg-green-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %} flex items-center justify-center mr-4">
+              <i class="fas {% if student.current_session %}fa-calendar-check text-green-600 dark:text-green-400{% else %}fa-calendar-times text-red-600 dark:text-red-400{% endif %}"></i>
+            </div>
+            <div>
+              <h5 class="font-medium text-gray-800 dark:text-white">Academic Session</h5>
+              <p class="text-sm {% if student.current_session %}text-green-700 dark:text-green-400{% else %}text-red-700 dark:text-red-400{% endif %}">
+                {% if student.current_session %}
+                  {{ student.current_session.name }}
+                {% else %}
+                  No session assigned
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          <div>
+            {% if student.current_session %}
+            <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+              Complete
+            </span>
+            {% else %}
+            <button onclick="assignSession()" 
+                    class="px-3 py-1 text-xs font-medium rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
+              Assign Session
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Requirements -->
+      {% if additional_requirements %}
+      <div class="mt-6">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Additional Requirements</h4>
+        <div class="space-y-2">
+          {% for req in additional_requirements %}
+          <div class="flex items-center p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+            <i class="fas fa-exclamation-circle text-amber-600 dark:text-amber-400 mr-3"></i>
+            <div class="flex-1">
+              <p class="text-sm text-amber-700 dark:text-amber-400">{{ req }}</p>
+            </div>
+            <button class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+              Fix Now
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Activation Form -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Activate Student</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        Complete activation to enable academic operations for this student
+      </p>
+    </div>
+    
+    <div class="p-6">
+      <!-- Student Summary -->
+      <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            {% if student.passport %}
+            <img src="{{ student.passport.url }}" alt="{{ student.full_name }}" class="h-16 w-16 rounded-full object-cover">
+            {% else %}
+            <div class="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xl font-semibold">
+              {{ student.firstname|first|upper }}{{ student.surname|first|upper }}
+            </div>
+            {% endif %}
+          </div>
+          <div class="ml-4">
+            <h4 class="font-bold text-gray-800 dark:text-white">{{ student.full_name }}</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ student.student_number }}</p>
+            <div class="mt-1 flex items-center space-x-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                Inactive
+              </span>
+              {% if student.current_class %}
+              <span class="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                {{ student.current_class.name }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activation Benefits -->
+      <div class="mb-6">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">After Activation:</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-center p-3 border border-green-200 dark:border-green-800 rounded-lg">
+            <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+              <i class="fas fa-book text-green-600 dark:text-green-400"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-white">Academic Results</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Can receive exam results</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+              <i class="fas fa-file-invoice-dollar text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-white">Fee Management</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Can receive fee invoices</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+              <i class="fas fa-calendar-check text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-white">Attendance</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Can be marked present/absent</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
+              <i class="fas fa-user-graduate text-amber-600 dark:text-amber-400"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-white">Promotion</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Eligible for class promotion</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activation Form -->
+      <form method="post">
+        {% csrf_token %}
+        
+        <!-- Activation Notes -->
+        <div class="mb-6">
+          <label for="activation_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Activation Notes (Optional)
+          </label>
+          <textarea name="activation_notes" id="activation_notes" rows="3" 
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Add any notes about this activation..."></textarea>
+        </div>
+
+        <!-- Confirmation Checkbox -->
+        <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <div class="flex items-start">
+            <input type="checkbox" id="confirmActivation" required
+                   class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <label for="confirmActivation" class="ml-3">
+              <span class="text-sm font-medium text-amber-800 dark:text-amber-300">I confirm all requirements are met</span>
+              <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                By checking this box, I verify that all activation requirements are complete and this student is ready for academic operations.
+              </p>
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {% if progress == 100 %}
+              <i class="fas fa-check-circle text-green-500 mr-1"></i>
+              All requirements are complete
+              {% else %}
+              <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+              {{ 100|subtract:progress }}% requirements missing
+              {% endif %}
+            </p>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a href="{% url 'students:student_detail' student.pk %}" 
+               class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancel
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    id="activateButton" {% if progress < 100 %}disabled{% endif %}>
+              <i class="fas fa-toggle-on"></i>
+              <span>Activate Student</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="{% url 'students:student_update' student.pk %}" 
+       class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <div class="flex items-center">
+        <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+          <i class="fas fa-edit text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-800 dark:text-white">Edit Student</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Update information</p>
+        </div>
+      </div>
+    </a>
+    
+    {% if not student.guardian %}
+    <a href="{% url 'students:guardian_create' %}?student={{ student.pk }}" 
+       class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <div class="flex items-center">
+        <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+          <i class="fas fa-user-plus text-green-600 dark:text-green-400"></i>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-800 dark:text-white">Add Guardian</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Assign parent/guardian</p>
+        </div>
+      </div>
+    </a>
+    {% endif %}
+    
+    <a href="{% url 'students:activation_wizard' %}?student={{ student.pk }}" 
+       class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <div class="flex items-center">
+        <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+          <i class="fas fa-magic text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-800 dark:text-white">Use Wizard</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Guided activation</p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<script>
+  // Update activation button based on progress
+  const activateButton = document.getElementById('activateButton');
+  const confirmCheckbox = document.getElementById('confirmActivation');
+  
+  function updateActivateButton() {
+    const isReady = {{ progress }} === 100 && confirmCheckbox.checked;
+    activateButton.disabled = !isReady;
+  }
+  
+  confirmCheckbox.addEventListener('change', updateActivateButton);
+  
+  // Initial check
+  updateActivateButton();
+  
+  // Assign class function
+  function assignClass() {
+    // In real implementation, this would open a modal or redirect
+    window.location.href = `{% url 'students:student_update' student.pk %}#class`;
+  }
+  
+  // Assign session function
+  function assignSession() {
+    // In real implementation, this would open a modal or redirect
+    window.location.href = `{% url 'students:student_update' student.pk %}#session`;
+  }
+  
+  // Form submission confirmation
+  document.querySelector('form').addEventListener('submit', function(e) {
+    if (!confirm('Are you sure you want to activate this student? This will enable all academic operations.')) {
+      e.preventDefault();
+      return false;
+    }
+    
+    // Show loading state
+    activateButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Activating...';
+    activateButton.disabled = true;
+    
+    return true;
+  });
+</script>
+{% endblock %}

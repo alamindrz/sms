@@ -1,37 +1,864 @@
+<!-- templates/corecode/siteconfig.html -->
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load static %}
 
-{% block title %}
-  {{title}}
-{% endblock title %}
+{% block title %}Site Configuration - EduSys Pro{% endblock %}
+{% block page_title %}Site Configuration{% endblock %}
+{% block page_subtitle %}System settings and configurations{% endblock %}
 
-
-
-{% block title-side %}{% endblock title-side %}
+{% block header_actions %}
+    <button type="button" onclick="saveAllConfigs()"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        <i class="fas fa-save mr-2"></i>Save All Changes
+    </button>
+    <button type="button" onclick="resetToDefaults()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-undo mr-2"></i>Reset Defaults
+    </button>
+{% endblock %}
 
 {% block content %}
-  <form method="POST">
-    {% csrf_token %}
-    {{ formset.management_form}}
+<div class="space-y-6">
+    <!-- Configuration Tabs -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex space-x-1 px-6" aria-label="Tabs">
+                {% for tab in tabs %}
+                <button type="button"
+                        data-tab="{{ tab.id }}"
+                        class="tab-button {% if forloop.first %}active{% endif %} px-4 py-3 text-sm font-medium rounded-t-lg transition-colors"
+                        onclick="switchTab('{{ tab.id }}')">
+                    <i class="{{ tab.icon }} mr-2"></i>{{ tab.name }}
+                </button>
+                {% endfor %}
+            </nav>
+        </div>
 
-    <div class="mb-3">
-      {% for form in formset %}
-      <div class="form-group row">
-        {{ form.id }}
-        <div class="col-2">{{ form.key.value}}</div>
-        <div class="col-6">{{ form.value | add_class:"form-control" | attr:"required"}}</div>
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- General Settings Tab -->
+            <div id="general-tab" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- School Name -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-school mr-2"></i>School Name
+                        </label>
+                        <input type="text" 
+                               name="school_name" 
+                               value="{{ config.school_name|default:'EduSys Academy' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="Enter school name">
+                    </div>
 
-        {% if form.errors %}
+                    <!-- School Motto -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-quote-left mr-2"></i>School Motto
+                        </label>
+                        <input type="text" 
+                               name="school_motto" 
+                               value="{{ config.school_motto|default:'Excellence in Education' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="School motto">
+                    </div>
 
-        {% endif %}
+                    <!-- Contact Email -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-envelope mr-2"></i>Contact Email
+                        </label>
+                        <input type="email" 
+                               name="contact_email" 
+                               value="{{ config.contact_email|default:'info@edusys.edu' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="contact@school.edu">
+                    </div>
 
-      </div>
-      {% endfor %}
+                    <!-- Phone Number -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-phone mr-2"></i>Phone Number
+                        </label>
+                        <input type="text" 
+                               name="phone_number" 
+                               value="{{ config.phone_number|default:'+1 (555) 123-4567' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="+1 (555) 123-4567">
+                    </div>
+
+                    <!-- Address -->
+                    <div class="space-y-2 md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-map-marker-alt mr-2"></i>School Address
+                        </label>
+                        <textarea name="school_address" 
+                                  rows="2"
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                  placeholder="Full school address">{{ config.school_address|default:'123 Education Street, Knowledge City, 12345' }}</textarea>
+                    </div>
+
+                    <!-- Website -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-globe mr-2"></i>Website
+                        </label>
+                        <input type="url" 
+                               name="website" 
+                               value="{{ config.website|default:'https://edusys.edu' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="https://school.edu">
+                    </div>
+                </div>
+
+                <!-- Academic Year Settings -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        <i class="fas fa-calendar-alt mr-2"></i>Academic Year Settings
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Current Academic Year
+                            </label>
+                            <input type="text" 
+                                   name="academic_year" 
+                                   value="{{ current_session.name|default:'2024-2025' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   readonly>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Current Term
+                            </label>
+                            <input type="text" 
+                                   name="current_term" 
+                                   value="{{ current_term.name|default:'First Term' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   readonly>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                &nbsp;
+                            </label>
+                            <a href="{% url 'corecode:current-session' %}" 
+                               class="inline-flex items-center justify-center w-full px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+                               hx-boost="true">
+                                <i class="fas fa-cog mr-2"></i>Change Academic Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admissions Tab -->
+            <div id="admissions-tab" class="tab-content hidden space-y-6">
+                <!-- Admissions Status -->
+                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-xl p-6 border border-indigo-200 dark:border-indigo-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-white">Admissions Control</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Manage admission applications and process</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-400 mr-3">Admissions Status:</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                       name="admissions_open" 
+                                       {% if config.admissions_open|default:True %}checked{% endif %}
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
+                                    {% if config.admissions_open|default:True %}Open{% else %}Closed{% endif %}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Application Fee
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 dark:text-gray-400">₹</span>
+                                </div>
+                                <input type="number" 
+                                       name="application_fee" 
+                                       value="{{ config.application_fee|default:'5000.00' }}"
+                                       step="0.01"
+                                       min="0"
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Admission Period
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="date" 
+                                       name="admission_start_date" 
+                                       value="{{ config.admission_start_date|date:'Y-m-d'|default:'' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                                <input type="date" 
+                                       name="admission_end_date" 
+                                       value="{{ config.admission_end_date|date:'Y-m-d'|default:'' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Instructions -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white">
+                        <i class="fas fa-money-check-alt mr-2"></i>Payment Instructions
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Bank Name
+                            </label>
+                            <input type="text" 
+                                   name="bank_name" 
+                                   value="{{ config.bank_name|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="e.g., State Bank of India">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Account Number
+                            </label>
+                            <input type="text" 
+                                   name="account_number" 
+                                   value="{{ config.account_number|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="1234567890">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Account Name
+                            </label>
+                            <input type="text" 
+                                   name="account_name" 
+                                   value="{{ config.account_name|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="EduSys Academy">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Payment Instructions
+                        </label>
+                        <textarea name="payment_instructions" 
+                                  rows="4"
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                  placeholder="Provide clear payment instructions...">{{ config.payment_instructions|default:'' }}</textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            This information will be displayed to applicants during the payment process.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Tab -->
+            <div id="system-tab" class="tab-content hidden space-y-6">
+                <!-- System Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            System Name
+                        </label>
+                        <input type="text" 
+                               name="system_name" 
+                               value="{{ config.system_name|default:'EduSys Pro' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="System name">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Version
+                        </label>
+                        <input type="text" 
+                               name="system_version" 
+                               value="{{ config.system_version|default:'1.0.0' }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                               placeholder="Version number">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Timezone
+                        </label>
+                        <select name="timezone" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                            <option value="UTC" {% if config.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                            <option value="Asia/Kolkata" {% if config.timezone == 'Asia/Kolkata' %}selected{% endif %}>IST (Asia/Kolkata)</option>
+                            <option value="America/New_York" {% if config.timezone == 'America/New_York' %}selected{% endif %}>EST (America/New_York)</option>
+                            <option value="Europe/London" {% if config.timezone == 'Europe/London' %}selected{% endif %}>GMT (Europe/London)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Date Format
+                        </label>
+                        <select name="date_format" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                            <option value="Y-m-d" {% if config.date_format == 'Y-m-d' %}selected{% endif %}>YYYY-MM-DD (2024-12-31)</option>
+                            <option value="d/m/Y" {% if config.date_format == 'd/m/Y' %}selected{% endif %}>DD/MM/YYYY (31/12/2024)</option>
+                            <option value="m/d/Y" {% if config.date_format == 'm/d/Y' %}selected{% endif %}>MM/DD/YYYY (12/31/2024)</option>
+                            <option value="d M Y" {% if config.date_format == 'd M Y' %}selected{% endif %}>DD Mon YYYY (31 Dec 2024)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Email Settings -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        <i class="fas fa-envelope mr-2"></i>Email Configuration
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                SMTP Host
+                            </label>
+                            <input type="text" 
+                                   name="smtp_host" 
+                                   value="{{ config.smtp_host|default:'smtp.gmail.com' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="smtp.gmail.com">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                SMTP Port
+                            </label>
+                            <input type="number" 
+                                   name="smtp_port" 
+                                   value="{{ config.smtp_port|default:'587' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="587">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Email Username
+                            </label>
+                            <input type="text" 
+                                   name="email_username" 
+                                   value="{{ config.email_username|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="no-reply@school.edu">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Email Password
+                            </label>
+                            <input type="password" 
+                                   name="email_password" 
+                                   value="{{ config.email_password|default:'' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="••••••••">
+                        </div>
+                    </div>
+                </div>
+                <!-- Backup Settings -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        <i class="fas fa-database mr-2"></i>Backup & Maintenance
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Auto Backup Frequency
+                            </label>
+                            <select name="backup_frequency" 
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                                <option value="daily" {% if config.backup_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if config.backup_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="monthly" {% if config.backup_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                                <option value="never" {% if config.backup_frequency == 'never' %}selected{% endif %}>Never</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Data Retention (Days)
+                            </label>
+                            <input type="number" 
+                                   name="data_retention" 
+                                   value="{{ config.data_retention|default:'365' }}"
+                                   min="30"
+                                   max="730"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="365">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Tab -->
+            <div id="security-tab" class="tab-content hidden space-y-6">
+                <!-- Login Security -->
+                <div class="bg-gradient-to-r from-red-50 to-amber-50 dark:from-red-900/10 dark:to-amber-900/10 rounded-xl p-6 border border-red-200 dark:border-red-800">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        <i class="fas fa-shield-alt mr-2"></i>Login Security
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       name="require_2fa" 
+                                       id="require_2fa"
+                                       {% if config.require_2fa|default:False %}checked{% endif %}
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                                <label for="require_2fa" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Require Two-Factor Authentication
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">For staff and admin accounts</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Session Timeout (Minutes)
+                            </label>
+                            <input type="number" 
+                                   name="session_timeout" 
+                                   value="{{ config.session_timeout|default:'30' }}"
+                                   min="5"
+                                   max="480"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="30">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Max Login Attempts
+                            </label>
+                            <input type="number" 
+                                   name="max_login_attempts" 
+                                   value="{{ config.max_login_attempts|default:'5' }}"
+                                   min="1"
+                                   max="10"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="5">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Lockout Duration (Minutes)
+                            </label>
+                            <input type="number" 
+                                   name="lockout_duration" 
+                                   value="{{ config.lockout_duration|default:'15' }}"
+                                   min="1"
+                                   max="1440"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="15">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Policy -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white">
+                        <i class="fas fa-key mr-2"></i>Password Policy
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Minimum Password Length
+                            </label>
+                            <input type="number" 
+                                   name="min_password_length" 
+                                   value="{{ config.min_password_length|default:'8' }}"
+                                   min="6"
+                                   max="32"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="8">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Password Expiry (Days)
+                            </label>
+                            <input type="number" 
+                                   name="password_expiry_days" 
+                                   value="{{ config.password_expiry_days|default:'90' }}"
+                                   min="0"
+                                   max="365"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                   placeholder="90 (0 = never expire)">
+                        </div>
+
+                        <div class="md:col-span-2 space-y-3">
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       name="require_uppercase" 
+                                       id="require_uppercase"
+                                       {% if config.require_uppercase|default:True %}checked{% endif %}
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                                <label for="require_uppercase" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Require uppercase letters
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       name="require_numbers" 
+                                       id="require_numbers"
+                                       {% if config.require_numbers|default:True %}checked{% endif %}
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                                <label for="require_numbers" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Require numbers
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       name="require_special_chars" 
+                                       id="require_special_chars"
+                                       {% if config.require_special_chars|default:True %}checked{% endif %}
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                                <label for="require_special_chars" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Require special characters
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Notification Tab -->
+            <div id="notification-tab" class="tab-content hidden space-y-6">
+                <!-- Email Notifications -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white">
+                        <i class="fas fa-bell mr-2"></i>Email Notifications
+                    </h4>
+                    <div class="space-y-3">
+                        {% for notification in notification_types %}
+                        <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="{{ notification.icon }} text-indigo-500 mr-3"></i>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800 dark:text-white">{{ notification.name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ notification.description }}</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                       name="{{ notification.key }}" 
+                                       {% if notification.enabled|default:True %}checked{% endif %}
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Notification Templates -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        <i class="fas fa-code mr-2"></i>Email Templates
+                    </h4>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Welcome Email Template
+                            </label>
+                            <textarea name="welcome_email_template" 
+                                      rows="4"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                                      placeholder="Welcome email template...">{{ config.welcome_email_template|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Save Actions -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h4 class="text-lg font-semibold text-gray-800 dark:text-white">Save Configuration</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Apply changes to system settings</p>
+            </div>
+            <div class="flex space-x-3">
+                <button type="button" onclick="resetToDefaults()"
+                        class="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-undo mr-2"></i>Reset All
+                </button>
+                <button type="button" onclick="saveAllConfigs()"
+                        class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <i class="fas fa-save mr-2"></i>Save All Changes
+                </button>
+            </div>
+        </div>
+    </div>
 
-    <input type="submit" value="Save" class="w-25 btn btn-primary">
+    <!-- System Status -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Configurations</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ config_count|default:"0" }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <i class="fas fa-cog text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Last Updated</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-1">{{ last_updated|date:"M d, Y"|default:"Never" }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fas fa-history text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Status</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-1">Active</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-  </form>
+<script>
+    // Tab definitions
+    const tabs = [
+        { id: 'general', name: 'General', icon: 'fas fa-cog' },
+        { id: 'admissions', name: 'Admissions', icon: 'fas fa-user-graduate' },
+        { id: 'system', name: 'System', icon: 'fas fa-server' },
+        { id: 'security', name: 'Security', icon: 'fas fa-shield-alt' },
+        { id: 'notification', name: 'Notifications', icon: 'fas fa-bell' }
+    ];
 
-{% endblock content %}
+    // Initialize tabs
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set active tab styling
+        document.querySelectorAll('.tab-button').forEach(button => {
+            if (button.classList.contains('active')) {
+                button.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-600', 'dark:text-indigo-400', 'border-b-2', 'border-indigo-500');
+            } else {
+                button.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-300');
+            }
+        });
+    });
+
+    function switchTab(tabId) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-600', 'dark:text-indigo-400', 'border-b-2', 'border-indigo-500');
+            button.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-300');
+        });
+        
+        // Show selected tab content
+        document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+        
+        // Add active class to selected tab button
+        const activeButton = document.querySelector(`[data-tab="${tabId}"]`);
+        activeButton.classList.add('active', 'bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-600', 'dark:text-indigo-400', 'border-b-2', 'border-indigo-500');
+        activeButton.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:text-gray-700', 'dark:hover:text-gray-300');
+    }
+
+    // Save configuration
+    async function saveAllConfigs() {
+        const configs = {};
+        const inputs = document.querySelectorAll('input[name], select[name], textarea[name]');
+        
+        // Collect all configuration values
+        inputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                configs[input.name] = input.checked;
+            } else if (input.type === 'number') {
+                configs[input.name] = parseFloat(input.value) || 0;
+            } else {
+                configs[input.name] = input.value;
+            }
+        });
+        
+        // Show loading state
+        const saveButton = document.querySelector('button[onclick="saveAllConfigs()"]');
+        const originalText = saveButton.innerHTML;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+        saveButton.disabled = true;
+        
+        try {
+            // Send configuration to server
+            const response = await fetch('{% url "corecode:site-config" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(configs)
+            });
+            
+            if (response.ok) {
+                showNotification('Configuration saved successfully!', 'success');
+            } else {
+                throw new Error('Failed to save configuration');
+            }
+        } catch (error) {
+            console.error('Error saving configuration:', error);
+            showNotification('Failed to save configuration. Please try again.', 'error');
+        } finally {
+            // Restore button state
+            saveButton.innerHTML = originalText;
+            saveButton.disabled = false;
+        }
+    }
+
+    function resetToDefaults() {
+        if (confirm('Are you sure you want to reset all configurations to default values?')) {
+            // Reset form values
+            const defaultValues = {
+                'school_name': 'EduSys Academy',
+                'school_motto': 'Excellence in Education',
+                'contact_email': 'info@edusys.edu',
+                'phone_number': '+1 (555) 123-4567',
+                'school_address': '123 Education Street, Knowledge City, 12345',
+                'website': 'https://edusys.edu',
+                'admissions_open': true,
+                'application_fee': 5000.00,
+                'system_name': 'EduSys Pro',
+                'system_version': '1.0.0',
+                'timezone': 'Asia/Kolkata',
+                'date_format': 'Y-m-d',
+                'session_timeout': 30,
+                'max_login_attempts': 5,
+                'lockout_duration': 15,
+                'min_password_length': 8,
+                'password_expiry_days': 90
+            };
+            
+            // Apply default values
+            Object.keys(defaultValues).forEach(key => {
+                const input = document.querySelector(`[name="${key}"]`);
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = defaultValues[key];
+                    } else {
+                        input.value = defaultValues[key];
+                    }
+                }
+            });
+            
+            showNotification('Configuration reset to defaults', 'info');
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showNotification(message, type = 'info') {
+        const types = {
+            'success': { icon: 'fa-check-circle', color: 'bg-green-500' },
+            'error': { icon: 'fa-exclamation-circle', color: 'bg-red-500' },
+            'info': { icon: 'fa-info-circle', color: 'bg-blue-500' },
+            'warning': { icon: 'fa-exclamation-triangle', color: 'bg-amber-500' }
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${types[type].color} text-white`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${types[type].icon} mr-3"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Auto-save when leaving tab
+    let hasUnsavedChanges = false;
+    
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('change', () => {
+            hasUnsavedChanges = true;
+        });
+    });
+    
+    window.addEventListener('beforeunload', (e) => {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        }
+    });
+</script>
+<style>
+    .tab-button {
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    
+    .tab-button:hover {
+        transform: translateY(-1px);
+    }
+    
+    .tab-button.active {
+        font-weight: 600;
+    }
+    
+    .tab-content {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}

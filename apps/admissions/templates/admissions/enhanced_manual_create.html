@@ -1,444 +1,453 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Create Student Manually - EduSys Pro{% endblock %}
+{% block page_title %}Create Student Manually{% endblock %}
+{% block page_subtitle %}Add a new student record with enhanced options{% endblock %}
 
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumbs %}
-<li class="breadcrumb-item"><a href="{% url 'admissions:student_creation_dashboard' %}">Student Creation</a></li>
-<li class="breadcrumb-item active">{{ title }}</li>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    .form-section {
-        background: #f8f9fa;
-        border-radius: 5px;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-left: 4px solid #007bff;
-    }
-    
-    .form-section h4 {
-        color: #007bff;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .required-field::after {
-        content: " *";
-        color: #dc3545;
-    }
-    
-    .guardian-fields {
-        transition: all 0.3s ease;
-    }
-    
-    .monospace {
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-    }
-</style>
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:student_creation_dashboard' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+    </a>
+</div>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-user-plus"></i> {{ title }}
-                    </h3>
+<div class="max-w-4xl mx-auto">
+    <!-- Progress Steps -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                    <i class="fas fa-user text-sm"></i>
                 </div>
-                
-                <form method="post" enctype="multipart/form-data" id="student-form">
-                    {% csrf_token %}
-                    
-                    <div class="card-body">
-                        <!-- Student Basic Information -->
-                        <div class="form-section">
-                            <h4><i class="fas fa-user-circle mr-2"></i> Student Basic Information</h4>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.surname.id_for_label }}" class="required-field">
-                                            {{ form.surname.label }}
-                                        </label>
-                                        {{ form.surname }}
-                                        {% if form.surname.errors %}
-                                        <div class="text-danger">{{ form.surname.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.firstname.id_for_label }}" class="required-field">
-                                            {{ form.firstname.label }}
-                                        </label>
-                                        {{ form.firstname }}
-                                        {% if form.firstname.errors %}
-                                        <div class="text-danger">{{ form.firstname.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.other_name.id_for_label }}">
-                                            {{ form.other_name.label }}
-                                        </label>
-                                        {{ form.other_name }}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.gender.id_for_label }}" class="required-field">
-                                            {{ form.gender.label }}
-                                        </label>
-                                        {{ form.gender }}
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.date_of_birth.id_for_label }}" class="required-field">
-                                            {{ form.date_of_birth.label }}
-                                        </label>
-                                        {{ form.date_of_birth }}
-                                        {% if form.date_of_birth.errors %}
-                                        <div class="text-danger">{{ form.date_of_birth.errors }}</div>
-                                        {% endif %}
-                                        <small class="text-muted">Format: YYYY-MM-DD</small>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="{{ form.passport.id_for_label }}">
-                                            {{ form.passport.label }}
-                                        </label>
-                                        {{ form.passport }}
-                                        {% if form.passport.help_text %}
-                                        <small class="form-text text-muted">{{ form.passport.help_text }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Contact Information -->
-                        <div class="form-section">
-                            <h4><i class="fas fa-address-book mr-2"></i> Contact Information</h4>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.email.id_for_label }}">
-                                            {{ form.email.label }}
-                                        </label>
-                                        {{ form.email }}
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.mobile_number.id_for_label }}">
-                                            {{ form.mobile_number.label }}
-                                        </label>
-                                        {{ form.mobile_number }}
-                                        {% if form.mobile_number.errors %}
-                                        <div class="text-danger">{{ form.mobile_number.errors }}</div>
-                                        {% endif %}
-                                        <small class="text-muted">e.g., 08012345678</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="{{ form.address.id_for_label }}">
-                                    {{ form.address.label }}
-                                </label>
-                                {{ form.address }}
-                            </div>
-                        </div>
-                        
-                        <!-- Academic Information -->
-                        <div class="form-section">
-                            <h4><i class="fas fa-graduation-cap mr-2"></i> Academic Information</h4>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.current_class.id_for_label }}">
-                                            {{ form.current_class.label }}
-                                        </label>
-                                        {{ form.current_class }}
-                                        <small class="text-muted">Required for activation</small>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.current_session.id_for_label }}">
-                                            {{ form.current_session.label }}
-                                        </label>
-                                        {{ form.current_session }}
-                                        <small class="text-muted">Required for activation</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-check mb-3">
-                                {{ form.auto_assign_class }}
-                                <label for="{{ form.auto_assign_class.id_for_label }}" class="form-check-label">
-                                    {{ form.auto_assign_class.label }}
-                                </label>
-                                <small class="form-text text-muted d-block">{{ form.auto_assign_class.help_text }}</small>
-                            </div>
-                        </div>
-                        
-                        <!-- Medical Information -->
-                        <div class="form-section">
-                            <h4><i class="fas fa-heartbeat mr-2"></i> Medical Information (Optional)</h4>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.medical_conditions.id_for_label }}">
-                                            {{ form.medical_conditions.label }}
-                                        </label>
-                                        {{ form.medical_conditions }}
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="{{ form.allergies.id_for_label }}">
-                                            {{ form.allergies.label }}
-                                        </label>
-                                        {{ form.allergies }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Guardian Information -->
-                        <div class="form-section">
-                            <h4><i class="fas fa-users mr-2"></i> Guardian Information</h4>
-                            
-                            <div class="form-check mb-3">
-                                {{ form.include_guardian }}
-                                <label for="{{ form.include_guardian.id_for_label }}" class="form-check-label">
-                                    {{ form.include_guardian.label }}
-                                </label>
-                                <small class="form-text text-muted d-block">{{ form.include_guardian.help_text }}</small>
-                            </div>
-                            
-                            <!-- Existing Guardian Selection -->
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div class="form-group">
-                                        <label for="{{ form.existing_guardian.id_for_label }}">
-                                            {{ form.existing_guardian.label }}
-                                        </label>
-                                        {{ form.existing_guardian }}
-                                        {% if form.existing_guardian.help_text %}
-                                        <small class="form-text text-muted">{{ form.existing_guardian.help_text }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- New Guardian Fields -->
-                            <div id="new-guardian-fields" class="guardian-fields">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle"></i> Fill in guardian details below, or select existing guardian above.
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ form.guardian_surname.id_for_label }}" class="required-field">
-                                                {{ form.guardian_surname.label }}
-                                            </label>
-                                            {{ form.guardian_surname }}
-                                            {% if form.guardian_surname.errors %}
-                                            <div class="text-danger">{{ form.guardian_surname.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ form.guardian_firstname.id_for_label }}" class="required-field">
-                                                {{ form.guardian_firstname.label }}
-                                            </label>
-                                            {{ form.guardian_firstname }}
-                                            {% if form.guardian_firstname.errors %}
-                                            <div class="text-danger">{{ form.guardian_firstname.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ form.guardian_email.id_for_label }}" class="required-field">
-                                                {{ form.guardian_email.label }}
-                                            </label>
-                                            {{ form.guardian_email }}
-                                            {% if form.guardian_email.errors %}
-                                            <div class="text-danger">{{ form.guardian_email.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ form.guardian_phone.id_for_label }}" class="required-field">
-                                                {{ form.guardian_phone.label }}
-                                            </label>
-                                            {{ form.guardian_phone }}
-                                            {% if form.guardian_phone.errors %}
-                                            <div class="text-danger">{{ form.guardian_phone.errors }}</div>
-                                            {% endif %}
-                                            <small class="text-muted">e.g., 08012345678</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ form.guardian_relationship.id_for_label }}">
-                                                {{ form.guardian_relationship.label }}
-                                            </label>
-                                            {{ form.guardian_relationship }}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ form.guardian_address.id_for_label }}">
-                                                {{ form.guardian_address.label }}
-                                            </label>
-                                            {{ form.guardian_address }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-save"></i> Create Student
-                        </button>
-                        <a href="{% url 'admissions:student_creation_dashboard' %}" class="btn btn-default">
-                            Cancel
-                        </a>
-                    </div>
-                </form>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-800 dark:text-white">Student Information</p>
+                </div>
             </div>
-            
-            <!-- Quick Tips -->
-            <div class="card card-info mt-3">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-lightbulb"></i> Quick Tips</h3>
+            <div class="h-1 w-12 bg-gray-300 dark:bg-gray-600"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center">
+                    <span class="text-sm">2</span>
                 </div>
-                <div class="card-body">
-                    <ul>
-                        <li>Students created manually start as <span class="badge bg-warning">INACTIVE</span></li>
-                        <li>To activate a student, they need: Guardian + Class + Academic Session</li>
-                        <li>Use existing guardian when possible to avoid duplicate records</li>
-                        <li>Check the "Auto-assign to current session" box for current academic year</li>
-                        <li>For multiple students, use <a href="{% url 'admissions:quick_student_create' %}">Quick Creation</a></li>
-                    </ul>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Guardian Information</p>
+                </div>
+            </div>
+            <div class="h-1 w-12 bg-gray-300 dark:bg-gray-600"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center">
+                    <span class="text-sm">3</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Review & Create</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
+    <!-- Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="studentForm" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Section 1: Student Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <div class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-2">
+                        <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-xs"></i>
+                    </div>
+                    Student Information
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'surname,firstname,other_name,gender,date_of_birth,religion' %}
+                        <div class="{% if field.name == 'other_name' %}md:col-span-2{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Section 2: Academic Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-2">
+                        <i class="fas fa-graduation-cap text-blue-600 dark:text-blue-400 text-xs"></i>
+                    </div>
+                    Academic Information
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'current_class,current_session' %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Auto-assign toggle -->
+                    <div class="md:col-span-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="auto_assign_class" id="auto_assign_class" 
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <label for="auto_assign_class" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                Auto-assign current academic session
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {% if current_session %}
+                            Current session: {{ current_session }}
+                            {% else %}
+                            No current session set in system
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Guardian Options -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <div class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-2">
+                        <i class="fas fa-users text-green-600 dark:text-green-400 text-xs"></i>
+                    </div>
+                    Guardian Information
+                </h3>
+                
+                <!-- Guardian Options -->
+                <div class="mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Option 1: Create New Guardian -->
+                        <div>
+                            <input type="radio" name="guardian_option" id="new_guardian" value="new" class="hidden peer" checked>
+                            <label for="new_guardian" class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-user-plus text-green-600 dark:text-green-400"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800 dark:text-white">Create New Guardian</h5>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Add new guardian details</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Option 2: Use Existing Guardian -->
+                        <div>
+                            <input type="radio" name="guardian_option" id="existing_guardian" value="existing" class="hidden peer">
+                            <label for="existing_guardian" class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-search text-blue-600 dark:text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800 dark:text-white">Use Existing Guardian</h5>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Select from existing guardians</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Guardian Fields -->
+                <div id="newGuardianFields" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% for field in form %}
+                            {% if field.name in 'guardian_surname,guardian_firstname,guardian_email,guardian_phone,guardian_relationship' %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% if field.errors %}
+                                <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.guardian_address.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.guardian_address.label }}
+                        </label>
+                        {{ form.guardian_address }}
+                        {% if form.guardian_address.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.guardian_address.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Existing Guardian Selector -->
+                <div id="existingGuardianFields" class="hidden">
+                    <div class="mb-4">
+                        <label for="{{ form.existing_guardian.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Select Existing Guardian
+                        </label>
+                        {{ form.existing_guardian }}
+                        {% if form.existing_guardian.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.existing_guardian.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Guardian Preview -->
+                    <div id="guardianPreview" class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hidden">
+                        <h4 class="font-medium text-gray-800 dark:text-white mb-2">Guardian Preview</h4>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Name:</span>
+                                <span id="previewName" class="ml-2 font-medium text-gray-800 dark:text-white"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Email:</span>
+                                <span id="previewEmail" class="ml-2 font-medium text-gray-800 dark:text-white"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Phone:</span>
+                                <span id="previewPhone" class="ml-2 font-medium text-gray-800 dark:text-white"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Students:</span>
+                                <span id="previewStudents" class="ml-2 font-medium text-gray-800 dark:text-white"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Additional Options -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <div class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-2">
+                        <i class="fas fa-cog text-purple-600 dark:text-purple-400 text-xs"></i>
+                    </div>
+                    Additional Options
+                </h3>
+                
+                <div class="space-y-4">
+                    <!-- Auto-activate toggle -->
+                    <div class="flex items-center">
+                        <input type="checkbox" name="auto_activate" id="auto_activate" 
+                               class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <label for="auto_activate" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Auto-activate student after creation
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Student will be activated if all required information is provided (guardian, class, session)
+                    </p>
+                    
+                    <!-- Generate credentials toggle -->
+                    <div class="flex items-center">
+                        <input type="checkbox" name="generate_credentials" id="generate_credentials" 
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <label for="generate_credentials" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Generate login credentials for parent portal
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Guardian will receive email with login details for parent portal
+                    </p>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-lightbulb text-amber-500 mr-1"></i>
+                        All required fields must be completed
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="reset" 
+                                class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Reset Form
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Create Student
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Tips -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Tips</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">Complete Information</h4>
+                </div>
+                <p class="text-sm text-blue-700 dark:text-blue-400">
+                    Fill all required fields to enable auto-activation. Students need guardian, class, and session to activate.
+                </p>
+            </div>
+            
+            <div class="p-3 rounded-lg border border-green-200 dark:border-green-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-users text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Guardian Management</h4>
+                </div>
+                <p class="text-sm text-green-700 dark:text-green-400">
+                    Use existing guardians for siblings. Each guardian can have multiple students.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const includeGuardianCheckbox = document.getElementById('{{ form.include_guardian.id_for_label }}');
-    const existingGuardianSelect = document.getElementById('{{ form.existing_guardian.id_for_label }}');
-    const newGuardianFields = document.getElementById('new-guardian-fields');
-    const guardianFields = document.querySelectorAll('.guardian-field');
-    const autoAssignCheckbox = document.getElementById('{{ form.auto_assign_class.id_for_label }}');
-    const sessionSelect = document.getElementById('{{ form.current_session.id_for_label }}');
+    const newGuardianRadio = document.getElementById('new_guardian');
+    const existingGuardianRadio = document.getElementById('existing_guardian');
+    const newGuardianFields = document.getElementById('newGuardianFields');
+    const existingGuardianFields = document.getElementById('existingGuardianFields');
+    const guardianSelect = document.getElementById('{{ form.existing_guardian.id_for_label }}');
+    const guardianPreview = document.getElementById('guardianPreview');
     
-    // Toggle guardian fields
+    // Guardian data (in real app, this would come from an API)
+    const guardianData = {
+        {% for guardian in guardians %}
+        "{{ guardian.pk }}": {
+            name: "{{ guardian.surname }} {{ guardian.firstname }}",
+            email: "{{ guardian.email }}",
+            phone: "{{ guardian.phone }}",
+            students: "{{ guardian.student_set.count }} student{{ guardian.student_set.count|pluralize:'s' }}"
+        },
+        {% endfor %}
+    };
+    
+    // Toggle guardian fields based on selection
     function toggleGuardianFields() {
-        const includeGuardian = includeGuardianCheckbox.checked;
-        const hasExistingGuardian = existingGuardianSelect.value !== '';
-        
-        if (includeGuardian && !hasExistingGuardian) {
-            newGuardianFields.style.display = 'block';
-            guardianFields.forEach(field => field.disabled = false);
+        if (newGuardianRadio.checked) {
+            newGuardianFields.classList.remove('hidden');
+            existingGuardianFields.classList.add('hidden');
+            // Mark new guardian fields as required
+            document.querySelectorAll('#newGuardianFields [required]').forEach(field => {
+                field.required = true;
+            });
         } else {
-            newGuardianFields.style.display = 'none';
-            guardianFields.forEach(field => field.disabled = true);
+            newGuardianFields.classList.add('hidden');
+            existingGuardianFields.classList.remove('hidden');
+            // Unmark new guardian fields as required
+            document.querySelectorAll('#newGuardianFields [required]').forEach(field => {
+                field.required = false;
+            });
         }
     }
     
-    // Handle existing guardian selection
-    existingGuardianSelect.addEventListener('change', function() {
-        toggleGuardianFields();
-    });
-    
-    // Handle include guardian checkbox
-    includeGuardianCheckbox.addEventListener('change', toggleGuardianFields);
-    
-    // Auto-assign session
-    autoAssignCheckbox.addEventListener('change', function() {
-        if (this.checked && '{{ current_session.id }}') {
-            sessionSelect.value = '{{ current_session.id }}';
-            sessionSelect.disabled = true;
+    // Update guardian preview
+    function updateGuardianPreview() {
+        const guardianId = guardianSelect.value;
+        if (guardianId && guardianData[guardianId]) {
+            const data = guardianData[guardianId];
+            document.getElementById('previewName').textContent = data.name;
+            document.getElementById('previewEmail').textContent = data.email;
+            document.getElementById('previewPhone').textContent = data.phone;
+            document.getElementById('previewStudents').textContent = data.students;
+            guardianPreview.classList.remove('hidden');
         } else {
-            sessionSelect.disabled = false;
+            guardianPreview.classList.add('hidden');
         }
-    });
+    }
     
-    // Initial state
+    // Event listeners
+    newGuardianRadio.addEventListener('change', toggleGuardianFields);
+    existingGuardianRadio.addEventListener('change', toggleGuardianFields);
+    guardianSelect.addEventListener('change', updateGuardianPreview);
+    
+    // Initialize
     toggleGuardianFields();
-    if (autoAssignCheckbox.checked && '{{ current_session.id }}') {
-        sessionSelect.value = '{{ current_session.id }}';
-        sessionSelect.disabled = true;
-    }
     
     // Form validation
-    const form = document.getElementById('student-form');
+    const form = document.getElementById('studentForm');
     form.addEventListener('submit', function(e) {
-        let isValid = true;
-        const requiredFields = form.querySelectorAll('.required-field');
-        
-        requiredFields.forEach(label => {
-            const fieldId = label.getAttribute('for');
-            const field = document.getElementById(fieldId);
+        // Validate date of birth
+        const dobInput = document.querySelector('input[name="date_of_birth"]');
+        if (dobInput && dobInput.value) {
+            const dob = new Date(dobInput.value);
+            const today = new Date();
+            const age = today.getFullYear() - dob.getFullYear();
             
-            if (field && !field.disabled && !field.value.trim()) {
-                field.classList.add('is-invalid');
-                isValid = false;
-            } else if (field) {
-                field.classList.remove('is-invalid');
+            if (age < 2) {
+                e.preventDefault();
+                alert('Student must be at least 2 years old.');
+                dobInput.focus();
+                return;
+            }
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Highlight selected guardian option
+    document.querySelectorAll('input[name="guardian_option"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('input[name="guardian_option"] + label').forEach(label => {
+                label.classList.remove('ring-2', 'ring-offset-2');
+            });
+            if (this.checked) {
+                const label = this.nextElementSibling;
+                if (label) {
+                    if (this.value === 'new') {
+                        label.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+                    } else {
+                        label.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                    }
+                }
             }
         });
         
-        if (!isValid) {
-            e.preventDefault();
-            alert('Please fill in all required fields.');
+        // Trigger change on page load
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
         }
     });
 });
 </script>
+{% endblock %}
 {% endblock %}

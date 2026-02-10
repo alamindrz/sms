@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activate Student - EduSys Pro{% endblock %}
+{% block page_title %}Activate Student{% endblock %}
+{% block page_subtitle %}{{ object.student_number }} - {{ object.full_name }}{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:student_detail' object.pk %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Student
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Student Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-user text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">{{ object.full_name }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ object.student_number }}</p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                Inactive
+            </span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Current Class</p>
+                <p class="font-medium text-gray-800 dark:text-white">
+                    {% if object.current_class %}
+                    {{ object.current_class }}
+                    {% else %}
+                    <span class="text-red-600 dark:text-red-400">Not assigned</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Academic Session</p>
+                <p class="font-medium text-gray-800 dark:text-white">
+                    {% if object.current_session %}
+                    {{ object.current_session }}
+                    {% else %}
+                    <span class="text-red-600 dark:text-red-400">Not assigned</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Guardian</p>
+                <p class="font-medium text-gray-800 dark:text-white">
+                    {% if object.guardian %}
+                    {{ object.guardian }}
+                    {% else %}
+                    <span class="text-red-600 dark:text-red-400">Not assigned</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activation Requirements -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Activation Requirements</h3>
+        
+        <div class="space-y-4">
+            {% for requirement in missing_requirements %}
+            <div class="flex items-center p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-times text-red-600 dark:text-red-400"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-red-800 dark:text-red-300">{{ requirement }}</p>
+                    <p class="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {% if requirement == 'Guardian/Parent' %}
+                        Student must have a guardian assigned
+                        {% elif requirement == 'Class' %}
+                        Student must be assigned to a class
+                        {% elif requirement == 'Academic Session' %}
+                        Student must have current academic session
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            {% empty %}
+            <div class="flex items-center p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-green-800 dark:text-green-300">All requirements met!</p>
+                    <p class="text-sm text-green-600 dark:text-green-400 mt-1">
+                        Student is ready for activation
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Quick Fixes -->
+        {% if missing_requirements %}
+        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Quick Fixes</h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {% if 'Guardian/Parent' in missing_requirements %}
+                <a href="{% url 'students:student_update' object.pk %}" 
+                   class="p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-center">
+                    <i class="fas fa-user-plus text-blue-600 dark:text-blue-400 text-lg mb-1"></i>
+                    <p class="text-sm font-medium text-gray-800 dark:text-white">Assign Guardian</p>
+                </a>
+                {% endif %}
+                
+                {% if 'Class' in missing_requirements %}
+                <a href="{% url 'students:student_update' object.pk %}" 
+                   class="p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors text-center">
+                    <i class="fas fa-chalkboard-teacher text-green-600 dark:text-green-400 text-lg mb-1"></i>
+                    <p class="text-sm font-medium text-gray-800 dark:text-white">Assign Class</p>
+                </a>
+                {% endif %}
+                
+                {% if 'Academic Session' in missing_requirements %}
+                <a href="{% url 'students:student_update' object.pk %}" 
+                   class="p-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors text-center">
+                    <i class="fas fa-calendar text-purple-600 dark:text-purple-400 text-lg mb-1"></i>
+                    <p class="text-sm font-medium text-gray-800 dark:text-white">Assign Session</p>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Activation Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="activationForm">
+            {% csrf_token %}
+            
+            <div class="mb-6">
+                <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Activation Options</h4>
+                
+                <div class="space-y-4">
+                    <!-- Option 1: Activate Now -->
+                    <div class="activation-option">
+                        <input type="radio" name="activation_option" id="activate_now" value="now" 
+                               class="hidden peer" {% if not missing_requirements %}checked{% endif %} {% if missing_requirements %}disabled{% endif %}>
+                        <label for="activate_now" 
+                               class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200 {% if missing_requirements %}opacity-50 cursor-not-allowed{% endif %}">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                                    <i class="fas fa-bolt text-green-600 dark:text-green-400"></i>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Activate Now</h5>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        Activate student immediately
+                                    </p>
+                                    {% if missing_requirements %}
+                                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                                        Fix requirements above first
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <!-- Option 2: Schedule Activation -->
+                    <div class="activation-option">
+                        <input type="radio" name="activation_option" id="schedule_activation" value="schedule" 
+                               class="hidden peer">
+                        <label for="schedule_activation" 
+                               class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                                    <i class="fas fa-calendar-alt text-blue-600 dark:text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Schedule Activation</h5>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        Activate on a future date
+                                    </p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Date (conditional) -->
+            <div id="scheduleSection" class="mb-6 hidden">
+                <label for="activation_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Activation Date
+                </label>
+                <input type="date" 
+                       id="activation_date" 
+                       name="activation_date" 
+                       min="{% now 'Y-m-d' %}"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Student will be activated automatically on this date
+                </p>
+            </div>
+
+            <!-- Activation Notes -->
+            <div class="mb-6">
+                <label for="{{ form.activation_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Activation Notes (Optional)
+                </label>
+                {{ form.activation_notes }}
+                {% if form.activation_notes.help_text %}
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.activation_notes.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Additional Options -->
+            <div class="mb-6">
+                <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Additional Options</h4>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="send_notification" id="send_notification" 
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="send_notification" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Send activation notification to guardian
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" name="generate_credentials" id="generate_credentials" 
+                               class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="generate_credentials" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Generate parent portal credentials
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" name="assign_fees" id="assign_fees" 
+                               class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <label for="assign_fees" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                            Assign default fee structure
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'admissions:student_detail' object.pk %}" 
+                   class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        {% if missing_requirements %}disabled{% endif %}>
+                    <i class="fas fa-bolt mr-2"></i>
+                    {% if missing_requirements %}Fix Requirements First{% else %}Activate Student{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- What Happens After Activation -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">After Activation</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-users text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">Class Roster</h4>
+                </div>
+                <p class="text-sm text-blue-700 dark:text-blue-400">
+                    Student will appear in class roster and attendance lists
+                </p>
+            </div>
+            
+            <div class="p-4 rounded-lg border border-green-200 dark:border-green-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-money-check-alt text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Fee Management</h4>
+                </div>
+                <p class="text-sm text-green-700 dark:text-green-400">
+                    Student will be included in fee billing and payment tracking
+                </p>
+            </div>
+            
+            <div class="p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-chart-line text-purple-500 mr-2"></i>
+                    <h4 class="font-medium text-purple-800 dark:text-purple-300">Performance Tracking</h4>
+                </div>
+                <p class="text-sm text-purple-700 dark:text-purple-400">
+                    Academic performance and attendance will be tracked
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const activateNowRadio = document.getElementById('activate_now');
+    const scheduleRadio = document.getElementById('schedule_activation');
+    const scheduleSection = document.getElementById('scheduleSection');
+    
+    // Toggle schedule section
+    function toggleScheduleSection() {
+        if (scheduleRadio.checked) {
+            scheduleSection.classList.remove('hidden');
+            // Set minimum date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('activation_date').min = tomorrow.toISOString().split('T')[0];
+        } else {
+            scheduleSection.classList.add('hidden');
+        }
+    }
+    
+    // Event listeners
+    activateNowRadio.addEventListener('change', toggleScheduleSection);
+    scheduleRadio.addEventListener('change', toggleScheduleSection);
+    
+    // Highlight selected activation option
+    document.querySelectorAll('.activation-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.activation-option label').forEach(label => {
+                label.classList.remove('ring-2', 'ring-offset-2');
+            });
+            if (this.checked) {
+                const label = this.nextElementSibling;
+                if (label) {
+                    if (this.value === 'now') {
+                        label.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+                    } else {
+                        label.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                    }
+                }
+            }
+        });
+        
+        // Trigger change on page load
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Form submission
+    const form = document.getElementById('activationForm');
+    form.addEventListener('submit', function(e) {
+        if (scheduleRadio.checked) {
+            const dateInput = document.getElementById('activation_date');
+            if (!dateInput.value) {
+                e.preventDefault();
+                alert('Please select an activation date');
+                dateInput.focus();
+                return;
+            }
+        }
+        
+        const studentName = '{{ object.full_name|escapejs }}';
+        const confirmMessage = scheduleRadio.checked 
+            ? `Schedule activation for ${studentName}?`
+            : `Activate ${studentName} now? This cannot be undone.`;
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            submitBtn.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

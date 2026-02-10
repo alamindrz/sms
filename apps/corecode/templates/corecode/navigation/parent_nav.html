@@ -1,13 +1,19 @@
-<nav class="mt-2">
-    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-        {% for item in nav_items %}
-        <li class="nav-item">
-            <a href="{% url item.url %}" 
-               class="nav-link {% if request.resolver_match.url_name == item.url %}active{% endif %}">
-                <i class="nav-icon {{ item.icon }}"></i>
-                <p>{{ item.title }}</p>
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-</nav>
+<div class="space-y-1">
+  {% for item in nav_items %}
+    <a href="{% url item.url %}" 
+       class="nav-item flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group 
+              {% if request.resolver_match.url_name == item.url or request.resolver_match.url_name in item.url %} 
+                bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 
+              {% else %}
+                hover:bg-gray-100 dark:hover:bg-gray-700
+              {% endif %}"
+       onclick="closeSidebarOnMobile()">
+      <div class="relative">
+        <i class="{{ item.icon }} text-gray-500 dark:text-gray-400 group-hover:text-indigo-500 text-sm mr-3 w-5 text-center"></i>
+      </div>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+        {{ item.title }}
+      </span>
+    </a>
+  {% endfor %}
+</div>

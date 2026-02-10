@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block page_title %}{% trans "Guardian Management" %}{% endblock %}
+{% block page_subtitle %}{% trans "Manage all student guardians/parents" %}{% endblock %}
+
+{% block header_actions %}
+{% if perms.students.add_guardian %}
+<a href="{% url 'students:guardian_create' %}" class="btn btn-primary flex items-center space-x-2">
+  <i class="fas fa-user-plus"></i>
+  <span>{% trans "Add Guardian" %}</span>
+</a>
+{% endif %}
+<a href="{% url 'students:student_list' %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-arrow-left"></i>
+  <span>{% trans "Back to Students" %}</span>
+</a>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">{% trans "Students" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Guardians" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Total Guardians" %}</p>
+        <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ total_guardians }}</p>
+      </div>
+      <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+        <i class="fas fa-users-cog fa-lg"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{% trans "Avg Students/Guardian" %}</p>
+        <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">
+          {{ avg_students_per_guardian|floatformat:1 }}
+        </p>
+      </div>
+      <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400">
+        <i class="fas fa-chart-line fa-lg"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="relative flex-1 max-w-md">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+        <i class="fas fa-search"></i>
+      </span>
+      <input type="text" id="guardianSearch" placeholder="{% trans 'Search by name or phone...' %}" 
+             class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white sm:text-sm">
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-separate border-spacing-0" id="guardianTable">
+      <thead class="bg-gray-50 dark:bg-gray-700/50">
+        <tr>
+          <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Full Name" %}</th>
+          <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Phone" %}</th>
+          <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">{% trans "Wards" %}</th>
+          <th class="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% for guardian in guardians %}
+        <tr class="guardian-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ guardian.surname }} {{ guardian.firstname }}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+            {{ guardian.phone }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                {{ guardian.student_count }}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+            <a href="{% url 'students:guardian_detail' guardian.pk %}" class="text-blue-600 hover:text-blue-900">{% trans "View" %}</a>
+            <button onclick="createUserAccount('{{ guardian.pk }}')" class="text-indigo-600 hover:text-indigo-900">{% trans "Invite" %}</button>
+            <a href="{% url 'students:guardian_update' guardian.pk %}" class="text-gray-600 hover:text-gray-900">{% trans "Edit" %}</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-6 py-10 text-center text-gray-500">{% trans "No guardians found." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Search logic
+  const searchInput = document.getElementById('guardianSearch');
+  const rows = document.querySelectorAll('.guardian-row');
+
+  searchInput.addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(term) ? '' : 'none';
+    });
+  });
+
+  // Create user account function
+  function createUserAccount(guardianId) {
+    if (confirm('{% trans "Create a user account for this guardian? They will receive a welcome email with login instructions." %}')) {
+      fetch(`/api/guardians/${guardianId}/create-account/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('{% trans "User account created successfully!" %}');
+          location.reload();
+        } else {
+          alert('{% trans "Error:" %} ' + data.error);
+        }
+      });
+    }
+  }
+</script>
+{% endblock %}

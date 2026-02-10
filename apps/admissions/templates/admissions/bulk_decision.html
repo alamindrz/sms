@@ -1,0 +1,575 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Decision - EduSys Pro{% endblock %}
+{% block page_title %}Bulk Admission Decision{% endblock %}
+{% block page_subtitle %}Make decisions for multiple applications at once{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:application_list' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Applications
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Instructions & Stats -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-lightbulb text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white">How It Works</h3>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        Select applications and apply same decision to all
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white">Ready for Decision</h3>
+                    <p class="text-lg font-bold text-gray-800 dark:text-white mt-1">
+                        {{ form.fields.applications.queryset.count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-list-ol text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white">Waitlisted</h3>
+                    <p class="text-lg font-bold text-gray-800 dark:text-white mt-1">
+                        {{ waitlisted_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Decision Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="bulkDecisionForm">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Applications Selection -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Select Applications *
+                        </label>
+                        <div class="flex space-x-2">
+                            <button type="button" id="selectAll" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                Select All
+                            </button>
+                            <button type="button" id="selectNone" class="text-xs text-gray-600 dark:text-gray-400 hover:underline">
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Applications Table -->
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                                    <tr>
+                                        <th class="w-12 px-4 py-3">
+                                            <input type="checkbox" id="masterCheckbox" class="rounded border-gray-300 dark:border-gray-600">
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Application
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Student
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Class
+                                        </th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Review Date
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for app in form.fields.applications.queryset %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                        <td class="px-4 py-3">
+                                            <input type="checkbox" 
+                                                   name="applications" 
+                                                   value="{{ app.pk }}" 
+                                                   class="app-checkbox rounded border-gray-300 dark:border-gray-600">
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                {{ app.application_number }}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center">
+                                                {% if app.student_photo %}
+                                                <img class="w-8 h-8 rounded-full mr-2 object-cover" 
+                                                     src="{{ app.student_photo.url }}" 
+                                                     alt="{{ app.full_name }}">
+                                                {% else %}
+                                                <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-2">
+                                                    <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-xs"></i>
+                                                </div>
+                                                {% endif %}
+                                                <div class="text-sm text-gray-900 dark:text-white">
+                                                    {{ app.full_name }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm text-gray-900 dark:text-white">
+                                                {{ app.admission_class|default:"-" }}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                {{ app.review_date|date:"d M"|default:"-" }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center">
+                                            <div class="text-gray-500 dark:text-gray-400">
+                                                <i class="fas fa-folder-open text-2xl mb-2"></i>
+                                                <p>No applications ready for decision</p>
+                                                <p class="text-xs mt-1">All applications have been decided or need review</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="selectedCount">
+                        0 applications selected
+                    </div>
+                    {% if form.applications.errors %}
+                    <div class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.applications.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Decision Options -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Decision *
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Approve -->
+                        <div class="decision-option">
+                            <input type="radio" name="decision" id="bulk_approve" value="approve" 
+                                   class="hidden peer" required>
+                            <label for="bulk_approve" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 transition-colors">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-2">
+                                        <i class="fas fa-check text-green-600 dark:text-green-400 text-xl"></i>
+                                    </div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Approve All</h5>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Send admission letters
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Waitlist -->
+                        <div class="decision-option">
+                            <input type="radio" name="decision" id="bulk_waitlist" value="waitlist" 
+                                   class="hidden peer">
+                            <label for="bulk_waitlist" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600 transition-colors">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-2">
+                                        <i class="fas fa-list-ol text-purple-600 dark:text-purple-400 text-xl"></i>
+                                    </div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Waitlist All</h5>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Place on waitlist
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Reject -->
+                        <div class="decision-option">
+                            <input type="radio" name="decision" id="bulk_reject" value="reject" 
+                                   class="hidden peer">
+                            <label for="bulk_reject" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 transition-colors">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-2">
+                                        <i class="fas fa-times text-red-600 dark:text-red-400 text-xl"></i>
+                                    </div>
+                                    <h5 class="font-semibold text-gray-800 dark:text-white">Reject All</h5>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Decline applications
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    {% if form.decision.errors %}
+                    <div class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.decision.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Rejection Reason (conditionally shown) -->
+                <div id="bulkRejectionSection" class="hidden">
+                    <label for="{{ form.rejection_reason.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Rejection Reason (for all selected)
+                    </label>
+                    {{ form.rejection_reason }}
+                    {% if form.rejection_reason.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.rejection_reason.help_text }}</p>
+                    {% endif %}
+                    {% if form.rejection_reason.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.rejection_reason.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Decision Notes -->
+                <div>
+                    <label for="{{ form.decision_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Decision Notes (Optional)
+                    </label>
+                    {{ form.decision_notes }}
+                    {% if form.decision_notes.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.decision_notes.help_text }}</p>
+                    {% endif %}
+                    {% if form.decision_notes.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.decision_notes.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Submit Section -->
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+                            <span id="actionWarning">Select applications and decision first</span>
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="{% url 'admissions:application_list' %}" 
+                               class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    id="submitButton"
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled>
+                                <i class="fas fa-bullhorn mr-2"></i>Apply Decision
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <!-- Class Capacity Overview -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Class Capacity Overview</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for class_info in class_capacities %}
+            <div class="p-4 rounded-lg border 
+                {% if class_info.is_full %}border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20
+                {% elif class_info.available < 5 %}border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20
+                {% else %}border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20{% endif %}">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-medium text-gray-800 dark:text-white">{{ class_info.class }}</h4>
+                    {% if class_info.is_full %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                        Full
+                    </span>
+                    {% elif class_info.available < 5 %}
+                    <span class="px-2 py-1 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                        Limited
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                    <div class="h-2 rounded-full 
+                        {% if class_info.is_full %}bg-red-600
+                        {% elif class_info.available < 5 %}bg-amber-600
+                        {% else %}bg-green-600{% endif %}" 
+                         style="width: {% widthratio class_info.current class_info.max 100 %}%">
+                    </div>
+                </div>
+                
+                <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                    <span>{{ class_info.current }}/{{ class_info.max }}</span>
+                    <span>{{ class_info.available }} available</span>
+                </div>
+                
+                {% if class_info.waitlisted %}
+                <div class="mt-2 text-xs text-purple-600 dark:text-purple-400">
+                    <i class="fas fa-list-ol mr-1"></i>
+                    {{ class_info.waitlisted }} waitlisted
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const masterCheckbox = document.getElementById('masterCheckbox');
+    const appCheckboxes = document.querySelectorAll('.app-checkbox');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const actionWarning = document.getElementById('actionWarning');
+    const submitButton = document.getElementById('submitButton');
+    const rejectionSection = document.getElementById('bulkRejectionSection');
+    
+    // Update selected count
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.app-checkbox:checked').length;
+        selectedCountSpan.textContent = `${selected} application${selected !== 1 ? 's' : ''} selected`;
+        
+        // Update warning message
+        if (selected === 0) {
+            actionWarning.textContent = 'Select applications first';
+            submitButton.disabled = true;
+        } else {
+            const decision = document.querySelector('input[name="decision"]:checked');
+            if (decision) {
+                actionWarning.textContent = `Will apply ${decision.value.toUpperCase()} to ${selected} application(s)`;
+                submitButton.disabled = false;
+            } else {
+                actionWarning.textContent = 'Select a decision';
+                submitButton.disabled = true;
+            }
+        }
+    }
+    
+    // Master checkbox
+    if (masterCheckbox) {
+        masterCheckbox.addEventListener('change', function() {
+            appCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+    
+    // Individual checkboxes
+    appCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedCount();
+            
+            // Update master checkbox
+            if (masterCheckbox) {
+                const allChecked = Array.from(appCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(appCheckboxes).some(cb => cb.checked);
+                masterCheckbox.checked = allChecked;
+                masterCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        });
+    });
+    
+    // Decision radio buttons
+    document.querySelectorAll('input[name="decision"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateSelectedCount();
+            
+            // Show/hide rejection section
+            if (rejectionSection) {
+                if (this.value === 'reject') {
+                    rejectionSection.classList.remove('hidden');
+                } else {
+                    rejectionSection.classList.add('hidden');
+                }
+            }
+            
+            // Update warning message
+            const selected = document.querySelectorAll('.app-checkbox:checked').length;
+            if (selected > 0) {
+                actionWarning.textContent = `Will apply ${this.value.toUpperCase()} to ${selected} application(s)`;
+                submitButton.disabled = false;
+            }
+        });
+    });
+    
+    // Select all/none buttons
+    document.getElementById('selectAll')?.addEventListener('click', function() {
+        appCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        if (masterCheckbox) masterCheckbox.checked = true;
+        updateSelectedCount();
+    });
+    
+    document.getElementById('selectNone')?.addEventListener('click', function() {
+        appCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        if (masterCheckbox) {
+            masterCheckbox.checked = false;
+            masterCheckbox.indeterminate = false;
+        }
+        updateSelectedCount();
+    });
+    
+    // Form submission
+    const form = document.getElementById('bulkDecisionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selected = document.querySelectorAll('.app-checkbox:checked').length;
+            const decision = document.querySelector('input[name="decision"]:checked');
+            
+            if (selected === 0) {
+                e.preventDefault();
+                alert('Please select at least one application.');
+                return;
+            }
+            
+            if (!decision) {
+                e.preventDefault();
+                alert('Please select a decision (Approve, Waitlist, or Reject).');
+                return;
+            }
+            
+            if (decision.value === 'reject') {
+                const rejectionReason = document.querySelector('select[name="rejection_reason"]');
+                if (rejectionReason && !rejectionReason.value) {
+                    e.preventDefault();
+                    alert('Please select a rejection reason.');
+                    rejectionReason.focus();
+                    return;
+                }
+            }
+            
+            const confirmMessage = `Are you sure you want to ${decision.value.toUpperCase()} ${selected} application(s)?\n\nThis action will send ${decision.value === 'approve' ? 'admission letters' : 'notifications'} and cannot be easily undone.`;
+            
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Disable button and show loading
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            submitButton.disabled = true;
+        });
+    }
+    
+    // Highlight selected decision
+    document.querySelectorAll('.decision-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.decision-option label').forEach(label => {
+                label.classList.remove('ring-2', 'ring-offset-2');
+            });
+            if (this.checked) {
+                const label = this.nextElementSibling;
+                if (label) {
+                    if (this.value === 'approve') {
+                        label.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+                    } else if (this.value === 'waitlist') {
+                        label.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2');
+                    } else if (this.value === 'reject') {
+                        label.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+                    }
+                }
+            }
+        });
+    });
+    
+    // Initialize
+    updateSelectedCount();
+});
+</script>
+
+<style>
+/* Form styling */
+#bulkDecisionForm textarea,
+#bulkDecisionForm select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #1f2937;
+    resize: vertical;
+}
+
+.dark #bulkDecisionForm textarea,
+.dark #bulkDecisionForm select {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #f3f4f6;
+}
+
+#bulkDecisionForm textarea:focus,
+#bulkDecisionForm select:focus {
+    outline: none;
+    ring-width: 2px;
+    ring-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+/* Decision option styling */
+.decision-option label {
+    transition: all 0.2s ease;
+}
+
+.decision-option input:checked + label {
+    transform: scale(1.02);
+}
+
+/* Scrollbar styling */
+#applicationsTable {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.dark #applicationsTable {
+    scrollbar-color: #6b7280 #374151;
+}
+
+#applicationsTable::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+#applicationsTable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.dark #applicationsTable::-webkit-scrollbar-track {
+    background: #374151;
+}
+
+#applicationsTable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.dark #applicationsTable::-webkit-scrollbar-thumb {
+    background: #6b7280;
+}
+</style>
+{% endblock %}
+{% endblock %}

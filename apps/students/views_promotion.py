@@ -8,13 +8,16 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, FormView, ListView
 from django.urls import reverse_lazy
-from django.db import transaction
+from django.db import transaction, models
 from django.http import JsonResponse
+from django.core.exceptions import ValidationError
 
-from apps.students.models import Student
+from .models import Student, PromotionLog
 from apps.corecode.models import StudentClass, AcademicSession
 from apps.result.utils import validate_promotion_eligibility, get_promotion_candidates
 from apps.result.forms import PromotionEligibilityForm
+
+
 
 class PromotionSafetyView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     """Check promotion eligibility before proceeding"""
@@ -42,6 +45,8 @@ class PromotionSafetyView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         
         return context
 
+
+
 @login_required
 @permission_required('students.change_student', raise_exception=True)
 def promotion_confirmation(request):
@@ -68,66 +73,57 @@ def promotion_confirmation(request):
         )
         
         if request.method == 'POST':
-            # Process promotion
+            # Get student IDs to promote
             student_ids = request.POST.getlist('student_ids[]')
             
-            promoted_count = 0
-            failed_count = 0
-            errors = []
+            if not student_ids:
+                messages.error(request, _("No students selected for promotion"))
+                return redirect('students:promotion_safety')
             
-            with transaction.atomic():
-                for student_id in student_ids:
-                    try:
-                        student = Student.objects.get(pk=student_id)
-                        
-                        # Validate eligibility
-                        validate_promotion_eligibility(
-                            student.id,
-                            from_class.id,
-                            to_class.id,
-                            session.id
-                        )
-                        
-                        # Promote student
-                        student.current_class = to_class
-                        student.save()
-                        
-                        # Create promotion log
-                        PromotionLog.objects.create(
-                            student=student,
-                            from_class=from_class,
-                            to_class=to_class,
-                            session=session,
-                            promoted_by=request.user.staff,
-                            notes='Promoted via promotion system'
-                        )
-                        
-                        promoted_count += 1
-                        
-                    except Exception as e:
-                        failed_count += 1
-                        errors.append(f"{student}: {str(e)}")
+            # Prepare promotion data for background processing
+            promotion_batch = {
+                'student_ids': [int(id) for id in student_ids],
+                'from_class_id': from_class.id,
+                'to_class_id': to_class.id,
+                'session_id': session.id,
+                'promoted_by_id': request.user.staff.id if hasattr(request.user, 'staff') else None,
+            }
+            
+            try:
+                # Import task function
+                from tasks.student_tasks import process_promotion_batch
                 
-                # Show results
-                if promoted_count > 0:
-                    messages.success(
-                        request,
-                        _(f"Successfully promoted {promoted_count} students")
-                    )
+                # Queue the promotion batch
+                task = process_promotion_batch.delay(promotion_batch)
                 
-                if failed_count > 0:
-                    messages.warning(
-                        request,
-                        _(f"Failed to promote {failed_count} students")
-                    )
-                    for error in errors[:5]:
-                        messages.error(request, error)
+                # Store task info in session for monitoring
+                request.session['promotion_task'] = {
+                    'task_id': task.id,
+                    'student_count': len(student_ids),
+                    'from_class': str(from_class),
+                    'to_class': str(to_class),
+                    'session': str(session),
+                    'queued_at': timezone.now().isoformat(),
+                }
                 
-                # Clear session data
+                messages.info(
+                    request,
+                    _(f"Promotion of {len(student_ids)} students queued for background processing.")
+                )
+                messages.info(
+                    request,
+                    _(f"Task ID: {task.id}. You can check status in the task monitor.")
+                )
+                
+                # Clear promotion data
                 if 'promotion_data' in request.session:
                     del request.session['promotion_data']
                 
-                return redirect('students:student_list')
+                return redirect('students:promotion_task_status')
+                
+            except Exception as e:
+                messages.error(request, _(f"Failed to queue promotion task: {str(e)}"))
+                logger.error(f"Promotion task queuing failed: {str(e)}")
         
         return render(request, 'students/promotion_confirm.html', {
             'from_class': from_class,
@@ -142,6 +138,33 @@ def promotion_confirmation(request):
     except (StudentClass.DoesNotExist, AcademicSession.DoesNotExist):
         messages.error(request, _("Invalid promotion data"))
         return redirect('students:promotion_safety')
+
+
+@login_required
+def promotion_task_status(request):
+    """View promotion task status"""
+    task_info = request.session.get('promotion_task', {})
+    
+    if not task_info:
+        messages.warning(request, _("No active promotion task found"))
+        return redirect('students:promotion_safety')
+    
+    # Check task status (simplified - in real app, use Celery result backend)
+    from celery.result import AsyncResult
+    from tasks.celery import app
+    
+    task_id = task_info.get('task_id')
+    task = AsyncResult(task_id, app=app)
+    
+    context = {
+        'task_info': task_info,
+        'task_status': task.status if task else 'UNKNOWN',
+        'task_result': task.result if task and task.ready() else None,
+        'is_ready': task.ready() if task else False,
+        'is_successful': task.successful() if task else False,
+    }
+    
+    return render(request, 'students/promotion_task_status.html', context)
 
 @login_required
 @permission_required('students.change_student', raise_exception=True)
@@ -176,6 +199,7 @@ def check_promotion_eligibility_ajax(request):
     
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+
 class PromotionLogView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """View promotion logs"""
     model = PromotionLog
@@ -187,24 +211,3 @@ class PromotionLogView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return PromotionLog.objects.all().select_related(
             'student', 'from_class', 'to_class', 'session', 'promoted_by'
         ).order_by('-promoted_at')
-
-# Create PromotionLog model if it doesn't exist
-from django.db import models
-
-class PromotionLog(models.Model):
-    """Log student promotions for audit trail"""
-    student = models.ForeignKey('Student', on_delete=models.CASCADE)
-    from_class = models.ForeignKey('corecode.StudentClass', on_delete=models.CASCADE, 
-                                   related_name='promoted_from')
-    to_class = models.ForeignKey('corecode.StudentClass', on_delete=models.CASCADE,
-                                 related_name='promoted_to')
-    session = models.ForeignKey('corecode.AcademicSession', on_delete=models.CASCADE)
-    promoted_by = models.ForeignKey('staffs.Staff', on_delete=models.SET_NULL, null=True)
-    promoted_at = models.DateTimeField(auto_now_add=True)
-    notes = models.TextField(blank=True)
-    
-    class Meta:
-        ordering = ['-promoted_at']
-    
-    def __str__(self):
-        return f"{self.student} promoted from {self.from_class} to {self.to_class}"

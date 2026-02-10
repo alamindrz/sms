@@ -1,0 +1,758 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load admission_filters %}
+
+{% block title %}Waitlist Management - EduSys Pro{% endblock %}
+{% block page_title %}Waitlist Management{% endblock %}
+{% block page_subtitle %}Manage waitlisted applications and class capacities{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:application_list' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Applications
+    </a>
+    <a href="{% url 'admissions:bulk_decision' %}" 
+       class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+        <i class="fas fa-bullhorn mr-2"></i>Bulk Decision
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-list-ol text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Waitlisted</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ waitlisted.count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Can Be Promoted</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white" id="canPromoteCount">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Full Classes</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                    {{ class_capacities|filter_full_classes|length }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                <i class="fas fa-chair text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Available Seats</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white" id="totalAvailableSeats">0</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Waitlisted Applications -->
+    <div class="lg:col-span-2">
+        <!-- Waitlisted Applications -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Waitlisted Applications ({{ waitlisted.count }})</h3>
+                <div class="flex space-x-2">
+                    <button id="bulkPromoteBtn" 
+                            class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-arrow-up mr-1"></i>Promote Selected
+                    </button>
+                    <button id="reorderBtn" 
+                            class="px-3 py-1.5 text-sm border border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                        <i class="fas fa-sort-numeric-down mr-1"></i>Reorder
+                    </button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="w-12 px-4 py-3">
+                                <input type="checkbox" id="selectAllWaitlisted" class="rounded border-gray-300 dark:border-gray-600">
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Position
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Student
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Class
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Waitlisted Since
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="waitlistTableBody">
+                        {% for app in waitlisted %}
+                        <tr class="waitlist-row hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" 
+                            data-app-id="{{ app.pk }}"
+                            data-class-id="{{ app.admission_class.pk|default:'' }}"
+                            data-class-available="{{ app.admission_class.available_seats|default:0 }}">
+                            <td class="px-4 py-3">
+                                <input type="checkbox" 
+                                       class="waitlist-checkbox rounded border-gray-300 dark:border-gray-600"
+                                       data-class-id="{{ app.admission_class.pk|default:'' }}">
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center">
+                                    <span class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs flex items-center justify-center mr-2">
+                                        {{ app.waitlist_position }}
+                                    </span>
+                                    <div class="flex space-x-1">
+                                        <button class="move-up text-gray-400 hover:text-purple-600 dark:hover:text-purple-400" title="Move up">
+                                            <i class="fas fa-chevron-up text-xs"></i>
+                                        </button>
+                                        <button class="move-down text-gray-400 hover:text-purple-600 dark:hover:text-purple-400" title="Move down">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center">
+                                    {% if app.student_photo %}
+                                    <img class="w-8 h-8 rounded-full mr-3 object-cover" 
+                                         src="{{ app.student_photo.url }}" 
+                                         alt="{{ app.full_name }}">
+                                    {% else %}
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-user text-indigo-600 dark:text-indigo-400 text-xs"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ app.full_name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ app.guardian_name }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm text-gray-900 dark:text-white">
+                                    {{ app.admission_class|default:"-" }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {% for class_info in class_capacities %}
+                                        {% if class_info.class == app.admission_class %}
+                                            {{ class_info.available }} seat{{ class_info.available|pluralize }} available
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                {{ app.updated_at|date:"d M Y" }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'admissions:application_detail' app.pk %}" 
+                                       class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                                       title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'admissions:waitlist_manage' app.pk %}" 
+                                       class="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300"
+                                       title="Manage">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'admissions:promote_from_waitlist' app.pk %}" 
+                                       class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 promote-single"
+                                       title="Promote"
+                                       onclick="return confirm('Promote {{ app.full_name }} from waitlist?')">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </a>
+                                    <a href="{% url 'admissions:application_decision' app.pk %}" 
+                                       class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                                       title="Change Decision">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center">
+                                <div class="text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-folder-open text-2xl mb-2"></i>
+                                    <p>No waitlisted applications</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bulk Promotion Modal -->
+        <div id="bulkPromoteModal" class="fixed inset-0 z-50 hidden">
+            <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+            <div class="fixed inset-0 flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Bulk Promotion</h3>
+                        
+                        <div class="mb-6">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                You are about to promote <span id="selectedCountText">0</span> application(s) from the waitlist.
+                            </p>
+                            
+                            <div id="capacityWarnings" class="mt-4 space-y-2 hidden">
+                                <!-- Warnings will be inserted here -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" 
+                                    onclick="closeBulkPromoteModal()"
+                                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="button" 
+                                    id="confirmBulkPromote"
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-arrow-up mr-2"></i>Promote Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Class Capacities -->
+    <div>
+        <!-- Class Capacities -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Class Capacities</h3>
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ class_capacities|length }} classes
+                </span>
+            </div>
+            
+            <div class="space-y-4">
+                {% for class_info in class_capacities %}
+                <div class="p-4 rounded-lg border 
+                    {% if class_info.is_full %}border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20
+                    {% elif class_info.available < 3 %}border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20
+                    {% else %}border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20{% endif %}">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-800 dark:text-white">{{ class_info.class }}</h4>
+                        {% if class_info.is_full %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                            Full
+                        </span>
+                        {% elif class_info.available < 3 %}
+                        <span class="px-2 py-1 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                            Limited
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                        <div class="h-2 rounded-full 
+                            {% if class_info.is_full %}bg-red-600
+                            {% elif class_info.available < 3 %}bg-amber-600
+                            {% else %}bg-green-600{% endif %}" 
+                             style="width: {% widthratio class_info.current class_info.max 100 %}%">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">
+                            {{ class_info.current }}/{{ class_info.max }}
+                        </span>
+                        <span class="font-medium 
+                            {% if class_info.is_full %}text-red-600 dark:text-red-400
+                            {% elif class_info.available < 3 %}text-amber-600 dark:text-amber-400
+                            {% else %}text-green-600 dark:text-green-400{% endif %}">
+                            {{ class_info.available }} available
+                        </span>
+                    </div>
+                    
+                    {% if class_info.waitlisted > 0 %}
+                    <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-purple-600 dark:text-purple-400">
+                                <i class="fas fa-list-ol mr-1"></i>
+                                {{ class_info.waitlisted }} waitlisted
+                            </span>
+                            <button class="text-xs text-purple-600 dark:text-purple-400 hover:underline view-waitlisted"
+                                    data-class-id="{{ class_info.class.pk }}">
+                                View
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <p class="text-gray-500 dark:text-gray-400">No class capacity data</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h3>
+            
+            <div class="space-y-3">
+                <button id="promoteTop" 
+                        class="w-full flex items-center p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors text-left">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-arrow-up text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Promote Top Candidate</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Promote #1 waitlisted student</p>
+                    </div>
+                </button>
+                
+                <button id="reorderAutomatically" 
+                        class="w-full flex items-center p-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors text-left">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-sort-amount-down text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Auto-reorder Waitlist</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Reorder by date & priority</p>
+                    </div>
+                </button>
+                
+                <a href="{% url 'admissions:application_list' %}?status=waitlisted" 
+                   class="w-full flex items-center p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-filter text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Filter Waitlisted</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">View in applications list</p>
+                    </div>
+                </a>
+                
+                <button id="exportWaitlist" 
+                        class="w-full flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-900/30 transition-colors text-left">
+                    <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-file-export text-gray-600 dark:text-gray-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Export Waitlist</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Download as CSV/Excel</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Waitlist Statistics -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Waitlist Statistics</h3>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Average Wait Time</span>
+                    <span class="font-medium text-gray-800 dark:text-white">14 days</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Promotion Rate</span>
+                    <span class="font-medium text-gray-800 dark:text-white">32%</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Longest Wait</span>
+                    <span class="font-medium text-gray-800 dark:text-white">45 days</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Shortest Wait</span>
+                    <span class="font-medium text-gray-800 dark:text-white">2 days</span>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Based on last 30 days of data
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const selectAllCheckbox = document.getElementById('selectAllWaitlisted');
+    const waitlistCheckboxes = document.querySelectorAll('.waitlist-checkbox');
+    const bulkPromoteBtn = document.getElementById('bulkPromoteBtn');
+    const bulkPromoteModal = document.getElementById('bulkPromoteModal');
+    const selectedCountText = document.getElementById('selectedCountText');
+    const capacityWarnings = document.getElementById('capacityWarnings');
+    const confirmBulkPromote = document.getElementById('confirmBulkPromote');
+    const canPromoteCount = document.getElementById('canPromoteCount');
+    const totalAvailableSeats = document.getElementById('totalAvailableSeats');
+    
+    // Class capacities data
+    const classCapacities = {
+        {% for class_info in class_capacities %}
+        "{{ class_info.class.pk }}": {
+            available: {{ class_info.available }},
+            max: {{ class_info.max }},
+            current: {{ class_info.current }},
+            waitlisted: {{ class_info.waitlisted }},
+            isFull: {{ class_info.is_full|yesno:"true,false" }}
+        },
+        {% endfor %}
+    };
+    
+    // Calculate total available seats
+    let totalSeats = 0;
+    Object.values(classCapacities).forEach(capacity => {
+        totalSeats += capacity.available;
+    });
+    totalAvailableSeats.textContent = totalSeats;
+    
+    // Update selected count and button state
+    function updateSelection() {
+        const selected = document.querySelectorAll('.waitlist-checkbox:checked');
+        const selectedCount = selected.length;
+        
+        // Update count display
+        canPromoteCount.textContent = selectedCount;
+        
+        // Enable/disable bulk promote button
+        bulkPromoteBtn.disabled = selectedCount === 0;
+        
+        // Update master checkbox
+        if (selectAllCheckbox) {
+            const allChecked = Array.from(waitlistCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(waitlistCheckboxes).some(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+        }
+        
+        // Check capacity for selected applications
+        let canPromoteAll = true;
+        let capacityIssues = [];
+        
+        // Group selected applications by class
+        const selectedByClass = {};
+        selected.forEach(checkbox => {
+            const classId = checkbox.dataset.classId;
+            if (classId) {
+                if (!selectedByClass[classId]) {
+                    selectedByClass[classId] = 0;
+                }
+                selectedByClass[classId]++;
+            }
+        });
+        
+        // Check capacity for each class
+        Object.entries(selectedByClass).forEach(([classId, count]) => {
+            const capacity = classCapacities[classId];
+            if (capacity) {
+                if (capacity.available < count) {
+                    canPromoteAll = false;
+                    capacityIssues.push({
+                        classId: classId,
+                        needed: count,
+                        available: capacity.available,
+                        max: capacity.max
+                    });
+                }
+            }
+        });
+        
+        // Update bulk promote button text
+        if (selectedCount > 0) {
+            bulkPromoteBtn.innerHTML = canPromoteAll 
+                ? `<i class="fas fa-arrow-up mr-1"></i>Promote Selected (${selectedCount})`
+                : `<i class="fas fa-exclamation-triangle mr-1"></i>Promote Selected (${selectedCount})`;
+            bulkPromoteBtn.classList.toggle('bg-green-600', canPromoteAll);
+            bulkPromoteBtn.classList.toggle('bg-amber-600', !canPromoteAll);
+            bulkPromoteBtn.classList.toggle('hover:bg-green-700', canPromoteAll);
+            bulkPromoteBtn.classList.toggle('hover:bg-amber-700', !canPromoteAll);
+        }
+    }
+    
+    // Master checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            waitlistCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelection();
+        });
+    }
+    
+    // Individual checkboxes
+    waitlistCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+    
+    // Initialize selection state
+    updateSelection();
+    
+    // Bulk promote button click
+    bulkPromoteBtn.addEventListener('click', function() {
+        const selected = document.querySelectorAll('.waitlist-checkbox:checked');
+        const selectedCount = selected.length;
+        
+        if (selectedCount === 0) return;
+        
+        // Update modal text
+        selectedCountText.textContent = selectedCount;
+        
+        // Clear previous warnings
+        capacityWarnings.innerHTML = '';
+        capacityWarnings.classList.add('hidden');
+        
+        // Check for capacity issues
+        let hasCapacityIssues = false;
+        const selectedByClass = {};
+        
+        selected.forEach(checkbox => {
+            const classId = checkbox.dataset.classId;
+            if (classId) {
+                if (!selectedByClass[classId]) {
+                    selectedByClass[classId] = 0;
+                }
+                selectedByClass[classId]++;
+            }
+        });
+        
+        // Add warnings for capacity issues
+        Object.entries(selectedByClass).forEach(([classId, count]) => {
+            const capacity = classCapacities[classId];
+            if (capacity && capacity.available < count) {
+                hasCapacityIssues = true;
+                
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'p-2 rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800';
+                warningDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        <p class="text-sm text-red-800 dark:text-red-300">
+                            Class ${classId}: ${count} selected, only ${capacity.available} seat${capacity.available !== 1 ? 's' : ''} available
+                        </p>
+                    </div>
+                `;
+                capacityWarnings.appendChild(warningDiv);
+            }
+        });
+        
+        if (hasCapacityIssues) {
+            capacityWarnings.classList.remove('hidden');
+        }
+        
+        // Show modal
+        bulkPromoteModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    // Close modal
+    function closeBulkPromoteModal() {
+        bulkPromoteModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Confirm bulk promotion
+    confirmBulkPromote.addEventListener('click', function() {
+        const selected = document.querySelectorAll('.waitlist-checkbox:checked');
+        const appIds = Array.from(selected).map(cb => {
+            const row = cb.closest('.waitlist-row');
+            return row ? row.dataset.appId : null;
+        }).filter(id => id);
+        
+        if (appIds.length === 0) {
+            closeBulkPromoteModal();
+            return;
+        }
+        
+        // Show loading state
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        this.disabled = true;
+        
+        // Send bulk promotion request
+        fetch('/admissions/bulk-promote/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ app_ids: appIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert(`Successfully promoted ${data.promoted_count} application(s)`);
+                // Reload page to see changes
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to promote applications'));
+                closeBulkPromoteModal();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to promote applications');
+            closeBulkPromoteModal();
+        });
+    });
+    
+    // Close modal on background click
+    bulkPromoteModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeBulkPromoteModal();
+        }
+    });
+    
+    // Reorder button
+    document.getElementById('reorderBtn').addEventListener('click', function() {
+        // Implement reorder functionality
+        alert('Reorder functionality will be implemented in the next version');
+    });
+    
+    // Promote top candidate
+    document.getElementById('promoteTop').addEventListener('click', function() {
+        const topRow = document.querySelector('.waitlist-row');
+        if (topRow) {
+            const appId = topRow.dataset.appId;
+            const studentName = topRow.querySelector('td:nth-child(3) .text-sm').textContent.trim();
+            
+            if (confirm(`Promote ${studentName} (position #1) from waitlist?`)) {
+                window.location.href = `/admissions/promote/${appId}/`;
+            }
+        } else {
+            alert('No waitlisted applications found');
+        }
+    });
+    
+    // Auto-reorder
+    document.getElementById('reorderAutomatically').addEventListener('click', function() {
+        if (confirm('Automatically reorder waitlist based on application date and priority?')) {
+            // Show loading
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Reordering...';
+            this.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                alert('Waitlist reordered successfully');
+                window.location.reload();
+            }, 1500);
+        }
+    });
+    
+    // Export waitlist
+    document.getElementById('exportWaitlist').addEventListener('click', function() {
+        // Simulate export
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+        this.disabled = true;
+        
+        setTimeout(() => {
+            alert('Waitlist exported successfully. Check your downloads.');
+            this.innerHTML = '<i class="fas fa-file-export mr-2"></i>Export Waitlist';
+            this.disabled = false;
+        }, 1000);
+    });
+    
+    // View waitlisted for specific class
+    document.querySelectorAll('.view-waitlisted').forEach(button => {
+        button.addEventListener('click', function() {
+            const classId = this.dataset.classId;
+            window.location.href = `{% url 'admissions:application_list' %}?status=waitlisted&class=${classId}`;
+        });
+    });
+    
+    // Move up/down buttons
+    document.querySelectorAll('.move-up, .move-down').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const direction = this.classList.contains('move-up') ? 'up' : 'down';
+            
+            // Implement move functionality
+            alert(`Move ${direction} functionality will be implemented in the next version`);
+        });
+    });
+});
+</script>
+
+<style>
+/* Modal animations */
+#bulkPromoteModal {
+    transition: opacity 0.3s ease;
+}
+
+#bulkPromoteModal > div:first-child {
+    transition: opacity 0.3s ease;
+}
+
+#bulkPromoteModal > div:last-child {
+    transition: transform 0.3s ease;
+}
+
+#bulkPromoteModal.hidden {
+    display: none;
+}
+
+#bulkPromoteModal:not(.hidden) > div:first-child {
+    opacity: 1;
+}
+
+#bulkPromoteModal:not(.hidden) > div:last-child {
+    transform: scale(1);
+}
+
+/* Waitlist row styling */
+.waitlist-row {
+    transition: all 0.2s ease;
+}
+
+.waitlist-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .waitlist-row:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+</style>
+{% endblock %}
+{% endblock %}

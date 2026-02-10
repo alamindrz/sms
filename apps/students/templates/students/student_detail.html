@@ -1,116 +1,497 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block content-header %}
-<div class="card-header">
-  <div class="card-tools">
-    <a href="#" class="btn btn-tool">Print</a>
-    <a href="{% url 'student-update' object.id %}" class="btn btn-tool">
-      <i class="fas fa-edit"></i>
-    </a>
-    <a href="{% url 'student-delete' object.id %}" class="btn btn-tool">
-      <i class="fas fa-times"></i>
-    </a>
-  </div>
+{% block page_title %}Student Profile{% endblock %}
+{% block page_subtitle %}{{ student.full_name }} - {{ student.student_number }}{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+  {% if perms.students.change_student %}
+  <a href="{% url 'students:student_update' student.pk %}" class="btn btn-primary flex items-center space-x-2">
+    <i class="fas fa-edit"></i>
+    <span>Edit Profile</span>
+  </a>
+  {% endif %}
+  {% if student.status == 'inactive' and perms.students.activate_student %}
+  <a href="{% url 'students:student_activate' student.pk %}" class="btn btn-success flex items-center space-x-2">
+    <i class="fas fa-toggle-on"></i>
+    <span>Activate Student</span>
+  </a>
+  {% endif %}
+  <a href="{% url 'students:student_list' %}" class="btn btn-secondary flex items-center space-x-2">
+    <i class="fas fa-arrow-left"></i>
+    <span>Back to List</span>
+  </a>
 </div>
-{% endblock content-header %}
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Students</a></li>
+<li class="breadcrumb-item active">{{ student.full_name }}</li>
+{% endblock %}
 
 {% block content %}
-    <div class="row mb-4">
-      <div class="col-sm-4">
-        <div class="row mb-2">
-
-          {% if object.passport %}
-            <img
-              src="{{ object.passport.url }}"
-              class="float-left rounded-circle mr-3" style="width: 120px; height: 120px;">
-          {% else %}
-            <img
-              src="{% static 'dist/img/avatar.png' %}"
-              class="float-left rounded-circle mr-3" style="width: 120px; height: 120px;">
-          {% endif %}
-
-
-          <div class="float-right">
-            <h4>{{ object.surname }} </h4>
-            <h4>{{ object.firstname }} </h4>
-            <h4>{{ object.other_name }} </h4>
-            <h4>{{ object.registration_number }} </h4>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left Column: Profile -->
+  <div class="lg:col-span-1">
+    <!-- Profile Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <!-- Profile Header -->
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-6">
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            {% if student.passport %}
+            <img src="{{ student.passport.url }}" alt="{{ student.full_name }}" 
+                 class="h-24 w-24 rounded-full border-4 border-white dark:border-gray-800 object-cover">
+            {% else %}
+            <div class="h-24 w-24 rounded-full border-4 border-white dark:border-gray-800 bg-gradient-to-br from-white to-gray-200 flex items-center justify-center text-3xl font-bold text-gray-600">
+              {{ student.firstname|first|upper }}{{ student.surname|first|upper }}
+            </div>
+            {% endif %}
+            <!-- Status Badge -->
+            <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white dark:border-gray-800 
+                       {% if student.status == 'active' %}bg-green-500
+                       {% elif student.status == 'inactive' %}bg-amber-500
+                       {% elif student.status == 'graduated' %}bg-purple-500
+                       {% else %}bg-gray-500{% endif %} 
+                       flex items-center justify-center">
+              <i class="fas 
+                {% if student.status == 'active' %}fa-check
+                {% elif student.status == 'inactive' %}fa-exclamation
+                {% elif student.status == 'graduated' %}fa-graduation-cap
+                {% else %}fa-times{% endif %} 
+                text-white text-xs"></i>
+            </div>
+          </div>
+          <div class="flex-1">
+            <h2 class="text-xl font-bold text-white">{{ student.full_name }}</h2>
+            <p class="text-indigo-100">{{ student.student_number }}</p>
+            <div class="mt-2 flex items-center space-x-2">
+              <span class="px-2 py-1 text-xs bg-white/20 text-white rounded-full">
+                <i class="fas fa-{{ student.gender|lower }} mr-1"></i>
+                {{ student.get_gender_display }}
+              </span>
+              <span class="px-2 py-1 text-xs bg-white/20 text-white rounded-full">
+                <i class="fas fa-birthday-cake mr-1"></i>
+                {{ student.age }} years
+              </span>
+            </div>
           </div>
         </div>
-        <h5>{{ object.current_class }} </h5>
-        <h5>{{ object.get_gender_display }} | {{ object.get_current_status_display }}</h5>
-
       </div>
-      <div class="col-sm-8">
-        <div>
-          <div class="form-group border-bottom row">
-            <label class="col">
-              Date of Birth
-            </label>
-            <div class="col">
-              {{ object.date_of_birth }}
-            </div>
-          </div>
 
-          <div class="form-group border-bottom row">
-            <label class="col">
-              Parent Mobile Number
-            </label>
-            <div class="col">
-              {{ object.parent_mobile_number}}
+      <!-- Profile Info -->
+      <div class="p-6">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">
+              {{ student.age }}
             </div>
+            <div class="text-xs text-gray-600 dark:text-gray-400">Age</div>
           </div>
-
-          <div class="form-group border-bottom row">
-            <label class="col">
-              Address
-            </label>
-            <div class="col">
-              {{ object.address }}
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">
+              {% if student.current_class %}{{ student.current_class.year }}{% else %}N/A{% endif %}
             </div>
+            <div class="text-xs text-gray-600 dark:text-gray-400">Year</div>
           </div>
-          <div class="form-group border-bottom row">
-            <label class="col">
-              Comments
-            </label>
-            <div class="col">
-              {{ object.others }}
-            </div>
-          </div>
-
         </div>
 
+        <!-- Contact Info -->
+        <div class="space-y-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Contact Information</h3>
+          {% if student.email %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-envelope w-5"></i>
+            <span class="ml-3 text-sm">{{ student.email }}</span>
+          </div>
+          {% endif %}
+          {% if student.mobile_number %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-phone w-5"></i>
+            <span class="ml-3 text-sm">{{ student.mobile_number }}</span>
+          </div>
+          {% endif %}
+          {% if student.address %}
+          <div class="flex items-start text-gray-600 dark:text-gray-400">
+            <i class="fas fa-map-marker-alt mt-1 w-5"></i>
+            <span class="ml-3 text-sm">{{ student.address|linebreaksbr }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Medical Info -->
+        {% if student.medical_conditions or student.allergies %}
+        <div class="mt-6 space-y-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Medical Information</h3>
+          {% if student.medical_conditions %}
+          <div class="flex items-start text-gray-600 dark:text-gray-400">
+            <i class="fas fa-heartbeat mt-1 w-5"></i>
+            <span class="ml-3 text-sm">{{ student.medical_conditions|linebreaksbr }}</span>
+          </div>
+          {% endif %}
+          {% if student.allergies %}
+          <div class="flex items-start text-gray-600 dark:text-gray-400">
+            <i class="fas fa-allergies mt-1 w-5"></i>
+            <span class="ml-3 text-sm">{{ student.allergies|linebreaksbr }}</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Dates -->
+        <div class="mt-6 space-y-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Important Dates</h3>
+          {% if student.admission_date %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-calendar-plus w-5"></i>
+            <span class="ml-3 text-sm">Admitted: {{ student.admission_date|date:"M d, Y" }}</span>
+          </div>
+          {% endif %}
+          {% if student.graduation_date %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-graduation-cap w-5"></i>
+            <span class="ml-3 text-sm">Graduated: {{ student.graduation_date|date:"M d, Y" }}</span>
+          </div>
+          {% endif %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-birthday-cake w-5"></i>
+            <span class="ml-3 text-sm">Date of Birth: {{ student.date_of_birth|date:"M d, Y" }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <h4>Invoice/Payment History</h4>
+    <!-- Guardian Card -->
+    {% if student.guardian %}
+    <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-user-friends text-indigo-500 mr-2"></i>
+          Guardian Information
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="flex items-center space-x-4 mb-4">
+          {% if student.guardian.photo %}
+          <img src="{{ student.guardian.photo.url }}" alt="{{ student.guardian.full_name }}" 
+               class="h-16 w-16 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600">
+          {% else %}
+          <div class="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white font-semibold border-2 border-gray-300 dark:border-gray-600">
+            {{ student.guardian.firstname|first|upper }}{{ student.guardian.surname|first|upper }}
+          </div>
+          {% endif %}
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">{{ student.guardian.full_name }}</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ student.guardian.relationship }}</p>
+          </div>
+        </div>
+        
+        <div class="space-y-3">
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-phone w-5"></i>
+            <span class="ml-3 text-sm">{{ student.guardian.phone }}</span>
+          </div>
+          {% if student.guardian.phone2 %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-phone-alt w-5"></i>
+            <span class="ml-3 text-sm">{{ student.guardian.phone2 }}</span>
+          </div>
+          {% endif %}
+          {% if student.guardian.email %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-envelope w-5"></i>
+            <span class="ml-3 text-sm">{{ student.guardian.email }}</span>
+          </div>
+          {% endif %}
+          {% if student.guardian.occupation %}
+          <div class="flex items-center text-gray-600 dark:text-gray-400">
+            <i class="fas fa-briefcase w-5"></i>
+            <span class="ml-3 text-sm">{{ student.guardian.occupation }}</span>
+          </div>
+          {% endif %}
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <a href="{% url 'students:guardian_detail' student.guardian.pk %}" 
+             class="inline-flex items-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+            <i class="fas fa-external-link-alt mr-2"></i>
+            View Full Guardian Profile
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Details & Activities -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Status Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Student Status</h3>
+        {% if student.status == 'active' %}
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+          <i class="fas fa-check-circle mr-1"></i>
+          Active
+        </span>
+        {% elif student.status == 'inactive' %}
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300">
+          <i class="fas fa-exclamation-circle mr-1"></i>
+          Inactive
+        </span>
+        {% endif %}
+      </div>
+      <div class="p-6">
+        <!-- Activation Progress -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Activation Progress</span>
+            <span class="text-sm font-bold text-gray-800 dark:text-white">{{ student.get_activation_progress }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+            <div class="bg-indigo-600 h-3 rounded-full transition-all duration-300" 
+                 style="width: {{ student.get_activation_progress }}%"></div>
+          </div>
+        </div>
+
+        <!-- Requirements Checklist -->
+        <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Requirements Checklist</h4>
+          
+          <div class="flex items-center {% if student.guardian %}text-green-600 dark:text-green-400{% else %}text-gray-400{% endif %}">
+            <i class="fas {% if student.guardian %}fa-check-circle{% else %}fa-times-circle{% endif %} mr-3"></i>
+            <span class="flex-1">Guardian/Parent Assigned</span>
+            {% if student.guardian %}
+            <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full">Complete</span>
+            {% else %}
+            <a href="{% url 'students:guardian_create' %}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+              Add Guardian
+            </a>
+            {% endif %}
+          </div>
+          
+          <div class="flex items-center {% if student.current_class %}text-green-600 dark:text-green-400{% else %}text-gray-400{% endif %}">
+            <i class="fas {% if student.current_class %}fa-check-circle{% else %}fa-times-circle{% endif %} mr-3"></i>
+            <span class="flex-1">Class Assignment</span>
+            {% if student.current_class %}
+            <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full">Complete</span>
+            {% else %}
+            <span class="text-xs text-amber-600 dark:text-amber-400">Required</span>
+            {% endif %}
+          </div>
+          
+          <div class="flex items-center {% if student.current_session %}text-green-600 dark:text-green-400{% else %}text-gray-400{% endif %}">
+            <i class="fas {% if student.current_session %}fa-check-circle{% else %}fa-times-circle{% endif %} mr-3"></i>
+            <span class="flex-1">Academic Session</span>
+            {% if student.current_session %}
+            <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full">Complete</span>
+            {% else %}
+            <span class="text-xs text-amber-600 dark:text-amber-400">Required</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Academic Information</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Current Class</label>
+            <div class="flex items-center">
+              {% if student.current_class %}
+              <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                <i class="fas fa-graduation-cap text-blue-600 dark:text-blue-400"></i>
+              </div>
+              <div>
+                <p class="text-lg font-semibold text-gray-800 dark:text-white">{{ student.current_class.name }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ student.current_class.year }}</p>
+              </div>
+              {% else %}
+              <p class="text-gray-500 dark:text-gray-400 italic">Not assigned</p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Academic Session</label>
+            <div class="flex items-center">
+              {% if student.current_session %}
+              <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center mr-3">
+                <i class="fas fa-calendar-alt text-purple-600 dark:text-purple-400"></i>
+              </div>
+              <div>
+                <p class="text-lg font-semibold text-gray-800 dark:text-white">{{ student.current_session.name }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  {{ student.current_session.start_date|date:"M Y" }} - {{ student.current_session.end_date|date:"M Y" }}
+                </p>
+              </div>
+              {% else %}
+              <p class="text-gray-500 dark:text-gray-400 italic">Not assigned</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fee Information -->
     {% if payments %}
-      <table class="table table-sm table-bordered table-hover">
-        <thead class="thead-light">
-          <tr>
-            <th>For</th>
-            <th>Amount Payable</th>
-            <th>Amount Paid</th>
-            <th>balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for payment in payments %}
-            <tr class='clickable-row' data-href="{% url 'invoice-detail' payment.id %}">
-              <td>{{payment.session}} - {{payment.term}} - {{ payment.class_for}}</td>
-              <td>{{payment.total_amount_payable}}</td>
-              <td>{{payment.total_amount_paid}}</td>
-              <td>{{payment.balance}}</td>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Fee Information</h3>
+        <a href="{% url 'finance:invoice_create' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+          <i class="fas fa-plus mr-1"></i>
+          Add Invoice
+        </a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invoice #</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Session</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Term</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-        <p>There are no payment history for {{object}}</p>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {% for invoice in payments %}
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                <a href="{% url 'finance:invoice_detail' invoice.id %}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                  {{ invoice.number }}
+                </a>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {{ invoice.session }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {{ invoice.term }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {{ invoice.total_amount_payable }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {{ invoice.balance }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                {% if invoice.balance <= 0 %}
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+                  Paid
+                </span>
+                {% else %}
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300">
+                  Pending
+                </span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
     {% endif %}
 
+    <!-- System Information -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">System Information</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Creation Method</label>
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900 flex items-center justify-center mr-3">
+                <i class="fas 
+                  {% if student.created_via == 'manual' %}fa-user-edit
+                  {% elif student.created_via == 'admission' %}fa-file-signature
+                  {% elif student.created_via == 'import' %}fa-file-import
+                  {% else %}fa-database{% endif %} 
+                  text-gray-600 dark:text-gray-400"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-800 dark:text-white">{{ student.get_created_via_display }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400">Created on {{ student.created_at|date:"M d, Y" }}</p>
+              </div>
+            </div>
+          </div>
+          
+          {% if student.created_by %}
+          <div>
+            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Created By</label>
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-semibold mr-3">
+                {{ student.created_by.first_name|first|upper }}{{ student.created_by.last_name|first|upper }}
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-800 dark:text-white">{{ student.created_by.get_full_name }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400">Staff</p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
+<!-- Action Buttons -->
+<div class="mt-6 flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+  <div>
+    {% if student.status == 'inactive' %}
+    <div class="text-amber-600 dark:text-amber-400 text-sm">
+      <i class="fas fa-exclamation-triangle mr-1"></i>
+      This student is inactive and cannot perform academic operations.
+    </div>
+    {% endif %}
+  </div>
+  <div class="flex items-center space-x-4">
+    {% if perms.students.delete_student %}
+    <a href="{% url 'students:student_delete' student.pk %}" 
+       class="px-4 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+      <i class="fas fa-trash mr-2"></i>
+      Delete Student
+    </a>
+    {% endif %}
+    <button onclick="window.print()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <i class="fas fa-print mr-2"></i>
+      Print Profile
+    </button>
+  </div>
+</div>
 
-
-{% endblock content %}
+<style>
+  @media print {
+    header, footer, .breadcrumb, .header-actions {
+      display: none !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    .bg-white, .bg-gray-800 {
+      background: white !important;
+      color: black !important;
+    }
+    .border-gray-200, .border-gray-700 {
+      border-color: #e5e7eb !important;
+    }
+  }
+</style>
+{% endblock %}

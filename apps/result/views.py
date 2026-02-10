@@ -7,7 +7,7 @@ from django.views.generic import CreateView, UpdateView, ListView
 from django.urls import reverse_lazy
 from django.db.models import Q, Avg, Sum, Count
 from django.http import JsonResponse
-
+from django.views.generic import DetailView
 from .models import Result, ResultBatch
 from .forms import ResultForm, ResultBatchForm, BulkResultForm
 from apps.students.models import Student
@@ -18,6 +18,13 @@ from .utils import (
     check_bulk_result_eligibility,
     validate_promotion_eligibility
 )
+
+
+from django.views.generic import TemplateView
+
+
+
+
 
 class SafeResultCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """Create result with safety checks"""
@@ -276,3 +283,152 @@ def export_eligible_students(request):
         ])
     
     return response
+    
+
+
+
+
+class ResultListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """List results with filtering"""
+    model = Result
+    template_name = 'result/result_list.html'
+    permission_required = 'result.view_result'
+    paginate_by = 50
+    
+    def get_queryset(self):
+        queryset = Result.objects.all().select_related(
+            'student', 'session', 'term', 'subject'
+        ).order_by('-date_created')
+        
+        # Apply filters
+        session_id = self.request.GET.get('session')
+        if session_id:
+            queryset = queryset.filter(session_id=session_id)
+        
+        term_id = self.request.GET.get('term')
+        if term_id:
+            queryset = queryset.filter(term_id=term_id)
+        
+        class_id = self.request.GET.get('class')
+        if class_id:
+            queryset = queryset.filter(student__current_class_id=class_id)
+        
+        subject_id = self.request.GET.get('subject')
+        if subject_id:
+            queryset = queryset.filter(subject_id=subject_id)
+        
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(student__surname__icontains=search) |
+                Q(student__firstname__icontains=search) |
+                Q(student__student_number__icontains=search)
+            )
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add filter options to context
+        context['sessions'] = AcademicSession.objects.all()
+        context['terms'] = AcademicTerm.objects.all()
+        context['classes'] = StudentClass.objects.all()
+        context['subjects'] = Subject.objects.all()
+        
+        return context
+
+
+class ResultUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """Update existing result"""
+    model = Result
+    form_class = ResultForm
+    template_name = 'result/result_update.html'
+    permission_required = 'result.change_result'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def get_success_url(self):
+        messages.success(self.request, _("Result updated successfully"))
+        return reverse_lazy('result:result_detail', kwargs={'pk': self.object.pk})
+
+
+class ResultDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """View result details"""
+    model = Result
+    template_name = 'result/result_detail.html'
+    permission_required = 'result.view_result'
+    context_object_name = 'result'
+
+
+class ResultBatchListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """List result batches"""
+    model = ResultBatch
+    template_name = 'result/batch_list.html'
+    permission_required = 'result.view_resultbatch'
+    context_object_name = 'batches'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        return ResultBatch.objects.all().select_related(
+            'session', 'term', 'student_class', 'created_by'
+        ).order_by('-created_at')
+
+
+class ResultBatchDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """View result batch details"""
+    model = ResultBatch
+    template_name = 'result/batch_detail.html'
+    permission_required = 'result.view_resultbatch'
+    context_object_name = 'batch'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get results in this batch
+        context['results'] = Result.objects.filter(
+            session=self.object.session,
+            term=self.object.term,
+            student__current_class=self.object.student_class
+        ).select_related('student', 'subject')
+        
+        # Get statistics
+        context['result_count'] = context['results'].count()
+        context['student_count'] = self.object.eligible_students.count()
+        
+        return context
+
+
+@login_required
+@permission_required('result.delete_result', raise_exception=True)
+def delete_result(request, pk):
+    """Delete a result"""
+    result = get_object_or_404(Result, pk=pk)
+    
+    if request.method == 'POST':
+        result.delete()
+        messages.success(request, _("Result deleted successfully"))
+        return redirect('result:result_list')
+    
+    return render(request, 'result/result_confirm_delete.html', {'result': result})
+
+
+@login_required
+@permission_required('result.change_resultbatch', raise_exception=True)
+def complete_batch(request, pk):
+    """Mark result batch as completed"""
+    batch = get_object_or_404(ResultBatch, pk=pk)
+    
+    if request.method == 'POST':
+        if not batch.is_completed:
+            batch.is_completed = True
+            batch.completed_at = timezone.now()
+            batch.save()
+            messages.success(request, _("Result batch marked as completed"))
+        
+        return redirect('result:batch_detail', pk=pk)
+    
+    return redirect('result:batch_detail', pk=pk)

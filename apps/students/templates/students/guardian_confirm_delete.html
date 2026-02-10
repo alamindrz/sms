@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Delete Guardian{% endblock %}
+{% block page_subtitle %}Confirm deletion of guardian record{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'students:guardian_detail' guardian.pk %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-arrow-left"></i>
+  <span>Back to Profile</span>
+</a>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Students</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:guardian_list' %}">Guardians</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:guardian_detail' guardian.pk %}">{{ guardian.full_name }}</a></li>
+<li class="breadcrumb-item active">Delete</li>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <!-- Warning Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-200 dark:border-red-800 overflow-hidden">
+    <div class="p-6">
+      <!-- Warning Icon -->
+      <div class="flex justify-center mb-6">
+        <div class="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-3xl"></i>
+        </div>
+      </div>
+      
+      <!-- Warning Message -->
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Delete Guardian Record</h2>
+        <p class="text-gray-600 dark:text-gray-400">
+          You are about to delete the guardian record for <span class="font-semibold text-gray-800 dark:text-white">{{ guardian.full_name }}</span>. 
+          This action cannot be undone.
+        </p>
+      </div>
+
+      <!-- Guardian Info -->
+      <div class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800 rounded-lg p-4 mb-6">
+        <div class="flex items-center space-x-4">
+          {% if guardian.photo %}
+          <img src="{{ guardian.photo.url }}" alt="{{ guardian.full_name }}" class="h-16 w-16 rounded-full object-cover border-2 border-red-200 dark:border-red-800">
+          {% else %}
+          <div class="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white font-semibold border-2 border-red-200 dark:border-red-800">
+            {{ guardian.firstname|first|upper }}{{ guardian.surname|first|upper }}
+          </div>
+          {% endif %}
+          <div>
+            <h4 class="font-bold text-gray-800 dark:text-white">{{ guardian.full_name }}</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ guardian.relationship }}</p>
+            <div class="mt-1 space-y-1">
+              {% if guardian.email %}
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <i class="fas fa-envelope mr-1"></i>
+                {{ guardian.email }}
+              </p>
+              {% endif %}
+              {% if guardian.phone %}
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <i class="fas fa-phone mr-1"></i>
+                {{ guardian.phone }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impact on Students -->
+      {% if guardian.students.all %}
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-red-800 dark:text-red-300 mb-4">
+          <i class="fas fa-user-graduate mr-2"></i>
+          Impact on Students
+        </h3>
+        
+        <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+          <div class="flex items-center mb-3">
+            <i class="fas fa-exclamation-circle text-amber-600 dark:text-amber-400 mr-2"></i>
+            <span class="font-medium text-amber-800 dark:text-amber-300">
+              This guardian has {{ guardian.students.all|length }} student{{ guardian.students.all|pluralize }} assigned
+            </span>
+          </div>
+          
+          <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
+            {% for student in guardian.students.all %}
+            <div class="flex items-center p-3 bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div class="flex-shrink-0">
+                {% if student.passport %}
+                <img src="{{ student.passport.url }}" alt="{{ student.full_name }}" class="h-10 w-10 rounded-full object-cover">
+                {% else %}
+                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
+                  {{ student.firstname|first|upper }}{{ student.surname|first|upper }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="ml-4 flex-1">
+                <h5 class="text-sm font-medium text-gray-800 dark:text-white">{{ student.full_name }}</h5>
+                <p class="text-xs text-gray-600 dark:text-gray-400">{{ student.student_number }}</p>
+              </div>
+              <div>
+                <span class="text-xs px-2 py-1 rounded-full 
+                  {% if student.status == 'active' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300
+                  {% else %}bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300{% endif %}">
+                  {{ student.get_status_display }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          
+          <p class="text-sm text-amber-700 dark:text-amber-400 mt-3">
+            <i class="fas fa-info-circle mr-1"></i>
+            These students will lose their guardian link and become orphaned.
+          </p>
+        </div>
+        
+        <!-- Consequences -->
+        <div class="space-y-3">
+          <div class="flex items-start text-red-600 dark:text-red-400">
+            <i class="fas fa-user-slash mt-1 mr-3"></i>
+            <div>
+              <p class="font-medium">Students Will Become Orphaned</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">All linked students will lose their guardian</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start text-red-600 dark:text-red-400">
+            <i class="fas fa-exclamation-triangle mt-1 mr-3"></i>
+            <div>
+              <p class="font-medium">Inactive Students</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Students may become inactive if they have no other guardian</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start text-red-600 dark:text-red-400">
+            <i class="fas fa-file-invoice-dollar mt-1 mr-3"></i>
+            <div>
+              <p class="font-medium">Financial Records</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Invoice and payment records will be affected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- User Account Impact -->
+      {% if guardian.user %}
+      <div class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg">
+        <h4 class="font-semibold text-purple-800 dark:text-purple-300 mb-2">
+          <i class="fas fa-user-shield mr-2"></i>
+          User Account Will Be Deleted
+        </h4>
+        <p class="text-sm text-purple-700 dark:text-purple-400">
+          This guardian has an active user account ({{ guardian.user.username }}). 
+          Deleting this guardian will also remove their access to the parent portal.
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <i class="fas fa-shield-alt mr-1"></i>
+          Requires admin privileges
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'students:guardian_detail' guardian.pk %}" 
+             class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            Cancel
+          </a>
+          {% if guardian.students.all %}
+          <button onclick="showReassignmentModal()" 
+                  class="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+            <i class="fas fa-exchange-alt mr-2"></i>
+            Reassign Students First
+          </button>
+          {% endif %}
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" 
+                    onclick="return confirmDeletion()"
+                    class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors flex items-center space-x-2">
+              <i class="fas fa-trash"></i>
+              <span>Delete Permanently</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alternative Actions -->
+  <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Safer Alternatives</h3>
+    <p class="text-gray-600 dark:text-gray-400 mb-4">
+      Instead of deleting, consider these safer alternatives:
+    </p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% if guardian.students.all %}
+      <a href="#" onclick="showReassignmentModal(); return false;" 
+         class="p-4 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-exchange-alt text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Reassign Students</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Move students to another guardian first</p>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+      
+      <a href="{% url 'students:guardian_update' guardian.pk %}" 
+         class="p-4 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-edit text-purple-600 dark:text-purple-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Update Information</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Edit guardian details instead</p>
+          </div>
+        </div>
+      </a>
+      
+      {% if guardian.user %}
+      <a href="#" onclick="deactivateAccount(); return false;" 
+         class="p-4 border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-user-slash text-amber-600 dark:text-amber-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Deactivate Account</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Disable portal access only</p>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+      
+      <a href="{% url 'students:guardian_detail' guardian.pk %}" 
+         class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center mr-4">
+            <i class="fas fa-times text-gray-600 dark:text-gray-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-white">Cancel Deletion</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Go back to guardian profile</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Reassignment Modal -->
+<div id="reassignmentModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+    <!-- Modal panel -->
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white" id="modal-title">
+          Reassign Students
+        </h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Select a new guardian for the students
+        </p>
+      </div>
+      
+      <div class="px-6 py-4">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select New Guardian
+          </label>
+          <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <option value="">Choose a guardian...</option>
+            <!-- Options would be populated via AJAX -->
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="flex items-center">
+            <input type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Notify new guardian via email</span>
+          </label>
+        </div>
+        
+        <div class="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <p class="text-sm text-amber-700 dark:text-amber-400">
+            <i class="fas fa-info-circle mr-1"></i>
+            After reassignment, you can safely delete this guardian.
+          </p>
+        </div>
+      </div>
+      
+      <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+        <button type="button" onclick="hideReassignmentModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          Cancel
+        </button>
+        <button type="button" onclick="reassignStudents()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          Reassign Students
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Confirmation with additional warning for students
+  function confirmDeletion() {
+    const hasStudents = {{ guardian.students.all|length|yesno:"true,false" }};
+    
+    if (hasStudents) {
+      return confirm('⚠️ DANGER: This guardian has {{ guardian.students.all|length }} student(s) assigned. Deleting will orphan these students and may make them inactive. Are you absolutely sure you want to proceed?');
+    }
+    
+    return confirm('⚠️ FINAL WARNING: This will permanently delete the guardian record and cannot be undone. Are you absolutely sure?');
+  }
+
+  // Reassignment modal
+  function showReassignmentModal() {
+    document.getElementById('reassignmentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideReassignmentModal() {
+    document.getElementById('reassignmentModal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function reassignStudents() {
+    const newGuardianId = document.querySelector('#reassignmentModal select').value;
+    if (!newGuardianId) {
+      alert('Please select a new guardian');
+      return;
+    }
+    
+    // Make AJAX request to reassign students
+    fetch(`/api/guardians/{{ guardian.pk }}/reassign/${newGuardianId}/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Students reassigned successfully! You can now safely delete this guardian.');
+        hideReassignmentModal();
+      } else {
+        alert('Error reassigning students: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred while reassigning students.');
+    });
+  }
+
+  // Deactivate account function
+  function deactivateAccount() {
+    if (confirm('Deactivate this guardian\'s user account? They will lose access to the parent portal.')) {
+      fetch(`/api/guardians/{{ guardian.pk }}/deactivate-account/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Account deactivated successfully!');
+          location.reload();
+        } else {
+          alert('Error deactivating account: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deactivating the account.');
+      });
+    }
+  }
+
+  // Get CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Close modal on ESC key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      hideReassignmentModal();
+    }
+  });
+
+  // Close modal when clicking outside
+  document.getElementById('reassignmentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      hideReassignmentModal();
+    }
+  });
+</script>
+{% endblock %}

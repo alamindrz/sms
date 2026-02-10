@@ -1,165 +1,405 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Apply for Admission{% endblock %}
+{% block title %}Apply for Admission - EduSys Pro{% endblock %}
+{% block page_title %}Admission Application{% endblock %}
+{% block page_subtitle %}Apply for admission to our school{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">Admission Application Form</h3>
-                </div>
-                
-                <div class="card-body">
-                    {% if not admissions_open %}
-                    <div class="alert alert-warning">
-                        <h5><i class="icon fa fa-exclamation-triangle"></i> Admissions Closed</h5>
-                        Admissions are currently closed. Please check back later.
-                    </div>
-                    {% else %}
-                    
-                    <div class="alert alert-info">
-                        <h5><i class="icon fa fa-info-circle"></i> Important Information</h5>
-                        <ul>
-                            <li>All fields marked with * are required</li>
-                            <li>Ensure all information is accurate</li>
-                            <li>You will receive an application number upon submission</li>
-                            <li>Payment instructions will be sent to your email</li>
-                        </ul>
-                    </div>
-                    
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <!-- Guardian Information -->
-                        <div class="card card-secondary">
-                            <div class="card-header">
-                                <h4 class="card-title">Guardian/Parent Information</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% for field in form %}
-                                        {% if 'guardian' in field.name %}
-                                        <div class="form-group col-md-6">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <div class="text-danger">{{ field.errors }}</div>
-                                            {% endif %}
-                                            {% if field.help_text %}
-                                                <small class="form-text text-muted">{{ field.help_text }}</small>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Student Information -->
-                        <div class="card card-secondary mt-3">
-                            <div class="card-header">
-                                <h4 class="card-title">Student Information</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% for field in form %}
-                                        {% if 'guardian' not in field.name and 'previous' not in field.name and 'medical' not in field.name and 'doctor' not in field.name and 'photo' not in field.name %}
-                                        <div class="form-group col-md-6">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <div class="text-danger">{{ field.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Previous School Information -->
-                        <div class="card card-secondary mt-3">
-                            <div class="card-header">
-                                <h4 class="card-title">Previous School Information (if applicable)</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% for field in form %}
-                                        {% if 'previous' in field.name %}
-                                        <div class="form-group col-md-6">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <div class="text-danger">{{ field.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Medical Information -->
-                        <div class="card card-secondary mt-3">
-                            <div class="card-header">
-                                <h4 class="card-title">Medical Information</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% for field in form %}
-                                        {% if 'medical' in field.name or 'doctor' in field.name %}
-                                        <div class="form-group col-md-6">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <div class="text-danger">{{ field.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Photo Uploads -->
-                        <div class="card card-secondary mt-3">
-                            <div class="card-header">
-                                <h4 class="card-title">Photo Uploads</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% for field in form %}
-                                        {% if 'photo' in field.name %}
-                                        <div class="form-group col-md-6">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <div class="text-danger">{{ field.errors }}</div>
-                                            {% endif %}
-                                            {% if field.help_text %}
-                                                <small class="form-text text-muted">{{ field.help_text }}</small>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fa fa-paper-plane"></i> Submit Application
-                            </button>
-                            <a href="{% url 'home' %}" class="btn btn-default">Cancel</a>
-                        </div>
-                    </form>
-                    {% endif %}
+<div class="max-w-6xl mx-auto">
+    {% if not admissions_open %}
+    <div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Admissions Closed</h3>
+                <div class="mt-2 text-sm text-red-700 dark:text-red-400">
+                    <p>Admissions are currently closed. Please check back later or contact the school office.</p>
                 </div>
             </div>
         </div>
     </div>
+    {% else %}
+    
+    <!-- Progress Steps -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                    <i class="fas fa-user text-sm"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-800 dark:text-white">Student Information</p>
+                </div>
+            </div>
+            <div class="h-1 w-12 bg-gray-300 dark:bg-gray-600"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center">
+                    <span class="text-sm">2</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Guardian Information</p>
+                </div>
+            </div>
+            <div class="h-1 w-12 bg-gray-300 dark:bg-gray-600"></div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center">
+                    <span class="text-sm">3</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Review & Submit</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Fee Notice -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800 dark:text-blue-300">Application Fee</h3>
+                <div class="mt-2 text-sm text-blue-700 dark:text-blue-400">
+                    <p>Application fee: <strong class="text-lg">₦{{ application_fee }}</strong></p>
+                    <p class="mt-1">You'll receive payment instructions after completing this form. The fee must be paid before your application can be reviewed.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" enctype="multipart/form-data" id="admissionForm" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Student Information Section -->
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Student Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'first_name,middle_name,surname,date_of_birth,gender,religion,birth_certificate_number' %}
+                        <div class="{% if field.name == 'middle_name' %}md:col-span-2{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Previous School Information -->
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Previous School Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'previous_school,previous_class' %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Guardian Information -->
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Guardian Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'guardian_name,guardian_email,guardian_phone,guardian_relationship' %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-6">
+                    <label for="{{ form.guardian_address.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ form.guardian_address.label }}
+                        {% if form.guardian_address.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ form.guardian_address }}
+                    {% if form.guardian_address.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.guardian_address.help_text }}</p>
+                    {% endif %}
+                    {% if form.guardian_address.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.guardian_address.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Medical Information -->
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Medical Information (Optional)</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="{{ form.medical_conditions.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.medical_conditions.label }}
+                        </label>
+                        {{ form.medical_conditions }}
+                        {% if form.medical_conditions.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.medical_conditions.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.allergies.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ form.allergies.label }}
+                        </label>
+                        {{ form.allergies }}
+                        {% if form.allergies.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.allergies.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admission Details -->
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Admission Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'admission_session,admission_class' %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- File Uploads -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Supporting Documents</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for field in form %}
+                        {% if field.name in 'student_photo,last_report_card' %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ field.label }}
+                            </label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-indigo-500 transition-colors">
+                                <div class="space-y-1 text-center">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    <div class="flex text-sm text-gray-600 dark:text-gray-400">
+                                        <label for="{{ field.id_for_label }}" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
+                                            <span>Upload a file</span>
+                                            {{ field }}
+                                        </label>
+                                        <p class="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        {% if field.name == 'student_photo' %}
+                                        JPG, PNG up to 2MB
+                                        {% else %}
+                                        PDF, DOC up to 5MB
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="mb-6">
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input id="terms" name="terms" type="checkbox" required
+                               class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="terms" class="font-medium text-gray-700 dark:text-gray-300">
+                            I agree to the terms and conditions
+                        </label>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">
+                            I confirm that all information provided is accurate to the best of my knowledge. I understand that providing false information may result in disqualification.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-3">
+                <button type="reset" 
+                        class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Reset Form
+                </button>
+                <button type="submit" 
+                        class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Submit Application
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Form Styling -->
+    <style>
+        /* Form input styling */
+        #admissionForm input[type="text"],
+        #admissionForm input[type="email"],
+        #admissionForm input[type="tel"],
+        #admissionForm input[type="date"],
+        #admissionForm select,
+        #admissionForm textarea {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            background-color: white;
+            color: #1f2937;
+            transition: all 0.2s;
+        }
+        
+        .dark #admissionForm input[type="text"],
+        .dark #admissionForm input[type="email"],
+        .dark #admissionForm input[type="tel"],
+        .dark #admissionForm input[type="date"],
+        .dark #admissionForm select,
+        .dark #admissionForm textarea {
+            border-color: #4b5563;
+            background-color: #374151;
+            color: #f3f4f6;
+        }
+        
+        #admissionForm input[type="text"]:focus,
+        #admissionForm input[type="email"]:focus,
+        #admissionForm input[type="tel"]:focus,
+        #admissionForm input[type="date"]:focus,
+        #admissionForm select:focus,
+        #admissionForm textarea:focus {
+            outline: none;
+            ring-width: 2px;
+            ring-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        
+        /* Hide default file input */
+        #admissionForm input[type="file"] {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+        
+        /* Date picker styling */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.5);
+        }
+        
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+    </style>
+    {% endif %}
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler
+    const form = document.getElementById('admissionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+
+    // Date of birth validation
+    const dobInput = document.querySelector('input[name="date_of_birth"]');
+    if (dobInput) {
+        dobInput.addEventListener('change', function() {
+            const dob = new Date(this.value);
+            const today = new Date();
+            const age = today.getFullYear() - dob.getFullYear();
+            
+            if (age < 2) {
+                alert('Student must be at least 2 years old.');
+                this.value = '';
+            } else if (age > 18) {
+                alert('Student must be less than 18 years old.');
+                this.value = '';
+            }
+        });
+    }
+
+    // File upload preview
+    const photoInput = document.querySelector('input[name="student_photo"]');
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                    alert('File size must be less than 2MB');
+                    this.value = '';
+                } else if (!file.type.match('image.*')) {
+                    alert('Please upload an image file (JPG, PNG)');
+                    this.value = '';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

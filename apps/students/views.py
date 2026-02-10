@@ -7,11 +7,11 @@ from django.http import HttpResponse, JsonResponse
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, View
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
-
+from django.db.models import Count, Avg
 from apps.finance.models import Invoice
 
 from .models import Student, StudentBulkUpload, Guardian
-
+from django.contrib.auth.decorators import login_required
 
 class StudentListView(LoginRequiredMixin, ListView):
     model = Student
@@ -38,7 +38,7 @@ class StudentCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form = super(StudentCreateView, self).get_form()
         form.fields["date_of_birth"].widget = widgets.DateInput(attrs={"type": "date"})
         form.fields["address"].widget = widgets.Textarea(attrs={"rows": 2})
-        form.fields["others"].widget = widgets.Textarea(attrs={"rows": 2})
+
         return form
 
 
@@ -96,15 +96,49 @@ class DownloadCSVViewdownloadcsv(LoginRequiredMixin, View):
 
 
 
+
+
 class GuardianListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
-    """List all guardians"""
+    """
+    List all guardians with optimized database queries and statistics.
+    """
     model = Guardian
     template_name = 'students/guardian_list.html'
     permission_required = 'students.view_guardian'
     context_object_name = 'guardians'
     
     def get_queryset(self):
-        return Guardian.objects.all().order_by('surname', 'firstname')
+        """
+        Optimized Queryset:
+        1. Annotate each guardian with the count of their related students.
+        2. Use the count in the table without hitting the DB for every row.
+        """
+        return Guardian.objects.all().annotate(
+            student_count=Count('students')  # Adjust 'students' if your related_name is different
+        ).order_by('surname', 'firstname')
+
+    def get_context_data(self, **kwargs):
+        """
+        Calculate statistics for the header cards.
+        """
+        context = super().get_context_data(**kwargs)
+        
+        # 1. Get the total number of guardians
+        total_guardians = self.get_queryset().count()
+        
+        # 2. Calculate average students per guardian
+        # We perform this at the database level for performance
+        avg_data = Guardian.objects.annotate(
+            num_students=Count('students')
+        ).aggregate(
+            average=Avg('num_students')
+        )
+        
+        context['total_guardians'] = total_guardians
+        context['avg_students_per_guardian'] = avg_data['average'] or 0
+        
+        return context
+
 
 class GuardianCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """Create a new guardian"""
@@ -178,3 +212,73 @@ def student_activation_status_api(request, pk):
         'status': student.status,
         'status_display': student.get_status_display(),
     })
+    
+
+
+@login_required
+def task_monitor(request):
+    """Simple task monitoring view"""
+    from celery.result import AsyncResult
+    from tasks.celery import app
+    
+    # Get recent uploads
+    recent_uploads = StudentBulkUpload.objects.all().order_by('-date_uploaded')[:10]
+    
+    # Get recent guardian creations
+    recent_guardians = Guardian.objects.filter(
+        user_creation_status='processing'
+    ).order_by('-id')[:10]
+    
+    # Check specific task if provided
+    task_id = request.GET.get('task_id')
+    task_info = None
+    if task_id:
+        try:
+            task = AsyncResult(task_id, app=app)
+            task_info = {
+                'id': task_id,
+                'status': task.status,
+                'result': task.result if task.ready() else None,
+                'ready': task.ready(),
+                'successful': task.successful(),
+                'failed': task.failed(),
+            }
+        except:
+            pass
+    
+    context = {
+        'recent_uploads': recent_uploads,
+        'recent_guardians': recent_guardians,
+        'task_info': task_info,
+        'total_pending_uploads': StudentBulkUpload.objects.filter(task_status='pending').count(),
+        'total_processing_uploads': StudentBulkUpload.objects.filter(task_status='processing').count(),
+    }
+    
+    return render(request, 'students/task_monitor.html', context)
+
+
+@login_required
+def task_status_api(request, task_id):
+    """API endpoint for task status"""
+    from celery.result import AsyncResult
+    from tasks.celery import app
+    
+    try:
+        task = AsyncResult(task_id, app=app)
+        
+        response_data = {
+            'task_id': task_id,
+            'status': task.status,
+            'ready': task.ready(),
+            'successful': task.successful(),
+            'failed': task.failed(),
+        }
+        
+        if task.ready():
+            response_data['result'] = task.result
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+

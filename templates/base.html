@@ -1,341 +1,463 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}School Management System{% endblock %}</title>
+  <title>{% block title %}EduSys Pro{% endblock %}</title>
   
-  <!-- Bootstrap 5 CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- AdminLTE 3 with Bootstrap 4 compatibility -->
-  <link href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4f46e5',
+            'primary-dark': '#4338ca',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Alpine.js for reactive components -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js"></script>
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.6" integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni" crossorigin="anonymous"></script>
   
-  <!-- DataTables -->
-  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
-  
-  {% block extra_css %}{% endblock %}
-  
+  <!-- Custom CSS (minimal) -->
   <style>
-    /* Fix for Bootstrap 5 + AdminLTE 3 compatibility */
-    .navbar-nav .nav-link {
-      padding-right: 0.5rem;
-      padding-left: 0.5rem;
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+
+    .dark ::-webkit-scrollbar-track {
+      background: #374151;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+      background: #6b7280;
+    }
+
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
     
-    .sidebar {
-      height: 100vh;
-      overflow-y: auto;
-      position: fixed;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      z-index: 1030;
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
     }
-    
-    @media (max-width: 767.98px) {
-      .sidebar {
-        position: fixed;
-        top: 0;
-        left: -250px;
-        height: 100vh;
-        z-index: 1030;
-        transition: left 0.3s ease;
+
+    /* Animation for sidebar items */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
       }
-      
-      .sidebar.show {
-        left: 0;
-      }
-      
-      .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1029;
-      }
-      
-      .sidebar-overlay.show {
-        display: block;
-      }
-      
-      .content-wrapper {
-        margin-left: 0 !important;
+      to {
+        opacity: 1;
+        transform: translateX(0);
       }
     }
-    
-    /* Fix for main header on mobile */
-    .main-header {
-      position: sticky;
-      top: 0;
-      z-index: 1030;
+
+    .nav-item {
+      animation: slideIn 0.3s ease-out forwards;
     }
-    
-    /* Fix for content wrapper */
-    .content-wrapper {
-      min-height: calc(100vh - 3.5rem);
-      margin-left: 250px;
-      transition: margin-left 0.3s ease;
-    }
-    
-    @media (max-width: 767.98px) {
-      .content-wrapper {
-        margin-left: 0;
-      }
+
+    /* Smooth transitions */
+    .sidebar-transition {
+      transition: transform 0.3s ease-in-out;
     }
   </style>
+  
+  {% block extra_css %}{% endblock %}
 </head>
-<body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
-  <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand-md navbar-white navbar-light border-bottom">
-    <!-- Left navbar links -->
-    <div class="container-fluid">
-      <button class="navbar-toggler order-1" type="button" id="sidebarToggle">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      
-      <a href="{% url 'index' %}" class="navbar-brand ml-2">
-        <img src="{% static 'dist/img/logo.png' %}" alt="School Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-        <span class="brand-text font-weight-light">School SMS</span>
-      </a>
-      
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto order-3">
-        {% if user.is_authenticated %}
-        <li class="nav-item dropdown">
-          <a class="nav-link" data-toggle="dropdown" href="#">
-            <i class="fas fa-user"></i>
-            {% if user.get_full_name %}
-              {{ user.get_full_name|truncatechars:20 }}
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  
+  <!-- Mobile Sidebar Overlay -->
+  <div id="mobileOverlay" 
+       class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden hidden"
+       onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" 
+         class="fixed top-0 left-0 z-50 h-screen sidebar-transition bg-white dark:bg-gray-800 shadow-xl flex flex-col w-64 lg:w-64 xl:w-72 border-r border-gray-200 dark:border-gray-700 lg:translate-x-0 -translate-x-full">
+    
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white text-lg"></i>
+          </div>
+          <h1 class="text-xl font-bold text-gray-800 dark:text-white truncate">
+            <span class="text-indigo-600 dark:text-indigo-400">Edu</span>Sys
+          </h1>
+        </div>
+        <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- User Info -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center space-x-3">
+        <div class="relative">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg font-semibold">
+            {% if user.is_authenticated %}
+              {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
             {% else %}
-              {{ user.username|truncatechars:20 }}
+              <i class="fas fa-user"></i>
             {% endif %}
-          </a>
-          <div class="dropdown-menu dropdown-menu-right">
-            {% if user.guardian_profile %}
-            <a href="{% url 'parent:profile' %}" class="dropdown-item">
-              <i class="fas fa-user mr-2"></i> Profile
-            </a>
-            {% endif %}
-            <div class="dropdown-divider"></div>
-            <a href="{% url 'logout' %}" class="dropdown-item">
-              <i class="fas fa-sign-out-alt mr-2"></i> Logout
-            </a>
           </div>
-        </li>
-        {% else %}
-        <li class="nav-item">
-          <a href="{% url 'login' %}" class="nav-link">Login</a>
-        </li>
-        {% endif %}
-      </ul>
-    </div>
-  </nav>
-
-  <!-- Sidebar Overlay (Mobile only) -->
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <!-- Main Sidebar Container -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4" id="mainSidebar">
-    <!-- Brand Logo -->
-    <div class="brand-link text-center py-3 border-bottom">
-      <span class="brand-text font-weight-light">Navigation</span>
-      <button class="close-sidebar d-md-none" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: white; font-size: 1.5rem;">
-        &times;
-      </button>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <!-- Sidebar user panel -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex border-bottom">
-        <div class="image">
           {% if user.is_authenticated %}
-          <div class="img-circle elevation-2 bg-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-            <i class="fas fa-user text-white"></i>
-          </div>
+            <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 
+                       {% if user.is_superuser %}bg-amber-500{% else %}bg-green-500{% endif %}"></div>
           {% endif %}
         </div>
-        <div class="info">
+        <div class="flex-1 min-w-0">
           {% if user.is_authenticated %}
-          <a href="#" class="d-block">
-            {% if user.get_full_name %}
-              {{ user.get_full_name|truncatechars:20 }}
-            {% else %}
-              {{ user.username|truncatechars:20 }}
-            {% endif %}
-          </a>
-          <small class="text-muted">
-            {% if user.guardian_profile %}
-              Parent/Guardian
-            {% elif user.is_staff %}
-              Staff
-            {% endif %}
-          </small>
+            <p class="text-sm font-semibold text-gray-800 dark:text-white truncate">
+              {% if user.get_full_name %}
+                {{ user.get_full_name }}
+              {% else %}
+                {{ user.username }}
+              {% endif %}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {% if user.is_superuser %}
+                <span class="flex items-center">
+                  <i class="fas fa-crown text-amber-500 mr-1 text-xs"></i>
+                  Super Admin
+                </span>
+              {% elif user.guardian_profile %}
+                Parent/Guardian
+              {% elif user.is_staff %}
+                Staff
+              {% else %}
+                User
+              {% endif %}
+            </p>
           {% else %}
-          <a href="{% url 'login' %}" class="d-block">Please login</a>
+            <p class="text-sm font-semibold text-gray-800 dark:text-white">Guest</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Please login</p>
           {% endif %}
         </div>
       </div>
+    </div>
 
-      <!-- Sidebar Menu -->
-      {% load navigation %}
-      {% get_user_role as user_role %}
+    <!-- Navigation -->
+    <div class="flex-1 overflow-y-auto py-4 scrollbar-hide">
+      <nav class="px-2">
+        {% load navigation %}
+        {% get_user_role as user_role %}
+        
+        {% if user_role == 'admin' %}
+          {% admin_navigation %}
+        {% elif user_role == 'parent' %}
+          {% parent_navigation %}
+        {% else %}
+          <!-- Public/Login navigation -->
+          <div class="space-y-1">
+            <a href="{% url 'corecode:login' %}" class="nav-link group flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="closeSidebarOnMobile()">
+              <i class="fas fa-sign-in-alt text-gray-500 dark:text-gray-400 group-hover:text-indigo-500 text-sm mr-3 w-5 text-center"></i>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Login</span>
+            </a>
+            <a href="{% url 'admissions:application_create' %}" class="nav-link group flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="closeSidebarOnMobile()">
+              <i class="fas fa-file-alt text-gray-500 dark:text-gray-400 group-hover:text-indigo-500 text-sm mr-3 w-5 text-center"></i>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Apply Now</span>
+            </a>
+          </div>
+        {% endif %}
+      </nav>
       
-      {% if user_role == 'admin' %}
-        {% admin_navigation %}
-      {% elif user_role == 'parent' %}
-        {% parent_navigation %}
-      {% else %}
-        <!-- Public/Login navigation -->
-        <nav class="mt-2">
-          <ul class="nav nav-pills nav-sidebar flex-column">
-            <li class="nav-item">
-              <a href="{% url 'login' %}" class="nav-link">
-                <i class="nav-icon fas fa-sign-in-alt"></i>
-                <p>Login</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{% url 'admissions:application_create' %}" class="nav-link">
-                <i class="nav-icon fas fa-file-alt"></i>
-                <p>Apply for Admission</p>
-              </a>
-            </li>
-          </ul>
-        </nav>
-      {% endif %}
+      <!-- Mode Toggle -->
+      <div class="px-3 mt-8">
+        <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900">
+          <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+            <i class="fas fa-moon mr-2"></i>Dark Mode
+          </span>
+          <button id="themeToggle" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 bg-gray-300 dark:bg-indigo-600">
+            <span id="themeToggleThumb" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 translate-x-1 dark:translate-x-6"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        {% if user.is_authenticated %}
+          <a href="{% url 'corecode:logout' %}" class="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="closeSidebarOnMobile()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="text-sm font-medium">Logout</span>
+          </a>
+        {% endif %}
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          v1.0
+        </span>
+      </div>
     </div>
   </aside>
 
-  <!-- Content Wrapper -->
-  <div class="content-wrapper" id="contentWrapper">
-    <!-- Content Header -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">{% block page_title %}{% endblock %}</h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-              {% block breadcrumbs %}{% endblock %}
-            </ol>
+  <!-- Main Content -->
+  <div id="mainContent" class="min-h-screen lg:ml-64 xl:ml-72">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div class="flex items-center justify-between px-6 py-3">
+        <!-- Left: Sidebar Toggle & Breadcrumbs -->
+        <div class="flex items-center space-x-4">
+          <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300">
+            <i class="fas fa-bars text-lg"></i>
+          </button>
+          <div class="hidden md:flex items-center space-x-2 text-sm">
+            <a href="{% url 'corecode:home' %}" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400">Home</a>
+            {% block breadcrumbs %}{% endblock %}
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Main content -->
-    <section class="content">
-      <div class="container-fluid">
-        {% if messages %}
-          {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
+        <!-- Right: User Menu & Notifications -->
+        <div class="flex items-center space-x-4">
+          <!-- Quick Stats (Admin Only) -->
+          {% if user.is_superuser %}
+          <div class="hidden lg:flex items-center space-x-4">
+            <div class="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
+              <i class="fas fa-crown mr-1"></i>
+              <span>Super Admin</span>
+            </div>
+          </div>
+          {% endif %}
+          
+          <div class="relative">
+            <button onclick="toggleNotifications()" class="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+              <i class="fas fa-bell text-gray-600 dark:text-gray-400"></i>
+              <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
           </div>
-          {% endfor %}
-        {% endif %}
-        
-        {% block content %}{% endblock %}
-      </div>
-    </section>
-  </div>
-
-  <!-- Footer -->
-  <footer class="main-footer">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-6">
-          <strong>Copyright &copy; {% now "Y" %} School Management System.</strong>
-          All rights reserved.
-        </div>
-        <div class="col-md-6 text-right">
-          <div class="float-right d-none d-sm-inline-block">
-            <b>Version</b> 1.0.0
+          
+          <div class="relative group">
+            <button id="userMenuButton" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
+                {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+              </div>
+              <i class="fas fa-chevron-down text-xs text-gray-500 dark:text-gray-400"></i>
+            </button>
+            <div id="userMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 hidden">
+              <div class="py-2">
+                {% if user.guardian_profile %}
+                  <a href="{% url 'parent:profile' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="closeSidebarOnMobile()">
+                    <i class="fas fa-user mr-2"></i>Profile
+                  </a>
+                {% endif %}
+                <a href="{% url 'corecode:logout' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="closeSidebarOnMobile()">
+                  <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </header>
+
+    <!-- Page Header -->
+    <div class="px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">{% block page_subtitle %}{% if user.is_authenticated %}Welcome back, {{ user.first_name|default:user.username }}!{% else %}Welcome to EduSys Pro{% endif %}{% endblock %}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          {% block header_actions %}{% endblock %}
+        </div>
+      </div>
     </div>
-  </footer>
-</div>
 
-<!-- jQuery (required by AdminLTE) -->
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-<!-- Bootstrap 5 Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- AdminLTE App -->
-<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <!-- Main Content Area -->
+    <main class="px-6 pb-8">
+      <!-- Messages -->
+      {% if messages %}
+        <div class="mb-6 space-y-3">
+          {% for message in messages %}
+            <div class="message-alert px-4 py-3 rounded-lg border-l-4 flex items-center justify-between
+                       {% if message.tags == 'success' %}bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300
+                       {% elif message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-300
+                       {% elif message.tags == 'warning' %}bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300
+                       {% else %}bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300{% endif %}">
+              <div class="flex items-center">
+                <i class="fas 
+                  {% if message.tags == 'success' %}fa-check-circle
+                  {% elif message.tags == 'error' %}fa-exclamation-circle
+                  {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                  {% else %}fa-info-circle{% endif %}
+                  mr-3"></i>
+                <span class="text-sm">{{ message }}</span>
+              </div>
+              <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Page Content -->
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
-<!-- DataTables -->
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+  <!-- Vanilla JavaScript -->
+  <script>
+    // Theme Management
+    function getTheme() {
+      return localStorage.getItem('theme') || 'light';
+    }
 
-<!-- Custom Vanilla JS -->
-<script src="{{ STATIC_URL }}dist/js/custom.js"></script>
+    function setTheme(theme) {
+      localStorage.setItem('theme', theme);
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      updateThemeToggle(theme === 'dark');
+    }
 
-<script>
-// Fix for sidebar toggle on mobile
-document.addEventListener('DOMContentLoaded', function() {
-  const sidebar = document.getElementById('mainSidebar');
-  const sidebarToggle = document.getElementById('sidebarToggle');
-  const sidebarOverlay = document.getElementById('sidebarOverlay');
-  const closeSidebar = document.querySelector('.close-sidebar');
-  const contentWrapper = document.getElementById('contentWrapper');
-  
-  // Toggle sidebar on button click
-  if (sidebarToggle) {
-    sidebarToggle.addEventListener('click', function() {
-      sidebar.classList.toggle('show');
-      sidebarOverlay.classList.toggle('show');
+    function toggleTheme() {
+      const currentTheme = getTheme();
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      setTheme(newTheme);
+    }
+
+    function updateThemeToggle(isDark) {
+      const toggle = document.getElementById('themeToggle');
+      const thumb = document.getElementById('themeToggleThumb');
+      if (isDark) {
+        toggle.classList.remove('bg-gray-300');
+        toggle.classList.add('bg-indigo-600');
+        thumb.classList.remove('translate-x-1');
+        thumb.classList.add('translate-x-6');
+      } else {
+        toggle.classList.remove('bg-indigo-600');
+        toggle.classList.add('bg-gray-300');
+        thumb.classList.remove('translate-x-6');
+        thumb.classList.add('translate-x-1');
+      }
+    }
+
+    // Initialize theme
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = getTheme();
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+      updateThemeToggle(savedTheme === 'dark');
+      
+      // Add event listener to theme toggle button
+      document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
     });
-  }
-  
-  // Close sidebar on overlay click
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', function() {
-      sidebar.classList.remove('show');
-      sidebarOverlay.classList.remove('show');
+
+    // Sidebar Management
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobileOverlay');
+      
+      if (sidebar.classList.contains('-translate-x-full')) {
+        // Open sidebar
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      } else {
+        // Close sidebar
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    }
+
+    function closeSidebarOnMobile() {
+      if (window.innerWidth < 1024) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    }
+
+    // User Menu Toggle
+    document.addEventListener('DOMContentLoaded', () => {
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userMenu = document.getElementById('userMenu');
+      
+      if (userMenuButton && userMenu) {
+        userMenuButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          userMenu.classList.toggle('hidden');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!userMenu.contains(e.target) && !userMenuButton.contains(e.target)) {
+            userMenu.classList.add('hidden');
+          }
+        });
+        
+        // Close menu when clicking on menu items (for mobile)
+        userMenu.addEventListener('click', () => {
+          userMenu.classList.add('hidden');
+        });
+      }
     });
-  }
-  
-  // Close sidebar on close button click
-  if (closeSidebar) {
-    closeSidebar.addEventListener('click', function() {
-      sidebar.classList.remove('show');
-      sidebarOverlay.classList.remove('show');
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobileOverlay');
+      
+      if (window.innerWidth < 1024 && 
+          sidebar && 
+          !sidebar.contains(e.target) && 
+          !e.target.closest('[onclick*="toggleSidebar"]')) {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
     });
-  }
-  
-  // Close sidebar when clicking on a link (mobile only)
-  if (window.innerWidth < 768) {
-    const sidebarLinks = document.querySelectorAll('.main-sidebar .nav-link');
-    sidebarLinks.forEach(link => {
-      link.addEventListener('click', function() {
-        sidebar.classList.remove('show');
-        sidebarOverlay.classList.remove('show');
+
+    // Auto-hide sidebar on mobile when clicking a link
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebarLinks = document.querySelectorAll('#sidebar a');
+      sidebarLinks.forEach(link => {
+        link.addEventListener('click', closeSidebarOnMobile);
       });
     });
-  }
-  
-  // AdminLTE treeview initialization
-  if (typeof $.fn.tree !== 'undefined') {
-    $('[data-widget="treeview"]').tree();
-  }
-});
-</script>
 
-{% block extra_js %}{% endblock %}
+    // Add animation delays to nav items
+    document.addEventListener('DOMContentLoaded', () => {
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach((item, index) => {
+        item.style.animationDelay = `${index * 0.05}s`;
+      });
+    });
+
+    // Notification Toggle
+    function toggleNotifications() {
+      // Implement notification dropdown
+      alert('Notifications feature coming soon!');
+    }
+  </script>
+
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

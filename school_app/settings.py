@@ -1,4 +1,5 @@
 import os
+from celery.schedules import crontab
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,7 +30,12 @@ INSTALLED_APPS = [
     "apps.result",
     "apps.admissions",
     "apps.parent",
+    # 3rd party
+    'django_celery_results',
+    'django_celery_beat',
+  
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -175,4 +181,37 @@ LOGGING = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-# Site Default values
+
+# Add to your settings.py
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+
+# Email settings (for testing)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For testing
+# For production:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+
+# School settings
+SCHOOL_NAME = 'Test School'
+SITE_URL = 'http://localhost:8000'
+
+
+
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-old-tasks': {
+        'task': 'tasks.system_tasks.cleanup_old_files_task',
+        'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
+        'args': (30,),  # Cleanup files older than 30 days
+    },
+}

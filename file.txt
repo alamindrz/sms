@@ -1,4 +1,0 @@
-# What is __init__(self)? 
-# What is an attribute?
-# What is a method
-# What is an object

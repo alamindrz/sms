@@ -16,4 +16,11 @@ pyflakes==2.3.1
 pytz==2021.1
 regex==2021.7.6
 sqlparse==0.4.4
+
 tomli==1.0.4
+
+
+celery>=5.3.0
+redis>=4.5.0  
+django-celery-results>=2.5.0
+django-celery-beat>=2.5.0

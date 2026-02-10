@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Waitlist - EduSys Pro{% endblock %}
+{% block page_title %}Manage Waitlist Position{% endblock %}
+{% block page_subtitle %}{{ object.application_number }} - {{ object.full_name }}{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:waitlist_dashboard' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Waitlist Dashboard
+    </a>
+    <a href="{% url 'admissions:promote_from_waitlist' object.pk %}" 
+       class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        <i class="fas fa-arrow-up mr-2"></i>Promote Now
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Application Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-list-ol text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">{{ object.full_name }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ object.application_number }}</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ object.waitlist_position|default:"-" }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Waitlist Position</div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Guardian</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ object.guardian_name }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Admission Class</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ object.admission_class|default:"Not specified" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Waitlisted Since</p>
+                <p class="font-medium text-gray-800 dark:text-white">{{ object.updated_at|date:"d M Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waitlist Management Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="waitlistForm">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Position Management -->
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Position Management</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Current Position -->
+                        <div class="p-4 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
+                            <div class="text-center">
+                                <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ object.waitlist_position|default:"-" }}</p>
+                                <p class="text-sm text-purple-700 dark:text-purple-400">Current Position</p>
+                            </div>
+                        </div>
+                        
+                        <!-- New Position -->
+                        <div class="md:col-span-2">
+                            <label for="{{ form.waitlist_position.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                New Position
+                            </label>
+                            <div class="flex items-center space-x-3">
+                                {{ form.waitlist_position }}
+                                <button type="button" 
+                                        id="autoPositionBtn"
+                                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    Auto-calculate
+                                </button>
+                            </div>
+                            {% if form.waitlist_position.help_text %}
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.waitlist_position.help_text }}</p>
+                            {% endif %}
+                            {% if form.waitlist_position.errors %}
+                            <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.waitlist_position.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Position Quick Actions -->
+                    <div class="mt-4 flex space-x-3">
+                        <button type="button" 
+                                id="moveUpBtn"
+                                class="px-4 py-2 border border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                            <i class="fas fa-arrow-up mr-2"></i>Move Up
+                        </button>
+                        <button type="button" 
+                                id="moveDownBtn"
+                                class="px-4 py-2 border border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                            <i class="fas fa-arrow-down mr-2"></i>Move Down
+                        </button>
+                        <button type="button" 
+                                id="moveToTopBtn"
+                                class="px-4 py-2 border border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                            <i class="fas fa-angle-double-up mr-2"></i>Move to Top
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Waitlist Notes -->
+                <div>
+                    <label for="{{ form.waitlist_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Waitlist Notes
+                    </label>
+                    {{ form.waitlist_notes }}
+                    {% if form.waitlist_notes.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.waitlist_notes.help_text }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Add notes about priority, special considerations, or contact history
+                    </p>
+                </div>
+
+                <!-- Status Options -->
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Status Options</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Keep Waitlisted -->
+                        <div class="status-option">
+                            <input type="radio" name="status_option" id="keep_waitlisted" value="waitlisted" 
+                                   class="hidden peer" checked>
+                            <label for="keep_waitlisted" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-list-ol text-purple-600 dark:text-purple-400"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800 dark:text-white">Keep Waitlisted</h5>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                                            Update position but keep on waitlist
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Change Decision -->
+                        <div class="status-option">
+                            <input type="radio" name="status_option" id="change_decision" value="change" 
+                                   class="hidden peer">
+                            <label for="change_decision" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-exchange-alt text-blue-600 dark:text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800 dark:text-white">Change Decision</h5>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                                            Approve, reject, or other status
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Change Decision Options -->
+                    <div id="changeDecisionOptions" class="mt-4 hidden">
+                        <div class="p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                            <p class="text-sm text-blue-800 dark:text-blue-300 mb-3">
+                                Changing decision will remove from waitlist
+                            </p>
+                            <div class="flex space-x-3">
+                                <a href="{% url 'admissions:application_decision' object.pk %}" 
+                                   class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-check mr-2"></i>Approve Now
+                                </a>
+                                <a href="{% url 'admissions:application_decision' object.pk %}" 
+                                   class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-times mr-2"></i>Reject Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-end space-x-3">
+                        <a href="{% url 'admissions:waitlist_dashboard' %}" 
+                           class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Update Waitlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Waitlist Context -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <!-- Class Capacity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Class Capacity</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-600 dark:text-gray-400">{{ object.admission_class|default:"Class" }}</span>
+                        <span class="font-medium text-gray-800 dark:text-white">
+                            {{ class_capacity.current }}/{{ class_capacity.max }}
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div class="h-2 rounded-full 
+                            {% if class_capacity.is_full %}bg-red-600
+                            {% elif class_capacity.available < 3 %}bg-amber-600
+                            {% else %}bg-green-600{% endif %}" 
+                             style="width: {% widthratio class_capacity.current class_capacity.max 100 %}%">
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>{{ class_capacity.available }} available</span>
+                        <span>{{ class_capacity.waitlisted }} waitlisted</span>
+                    </div>
+                </div>
+                
+                {% if class_capacity.is_full %}
+                <div class="p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        <p class="text-sm font-medium text-red-800 dark:text-red-300">Class is full</p>
+                    </div>
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                        Wait for seats to become available or consider other classes
+                    </p>
+                </div>
+                {% elif class_capacity.available > 0 %}
+                <div class="p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        <p class="text-sm font-medium text-green-800 dark:text-green-300">
+                            {{ class_capacity.available }} seat{{ class_capacity.available|pluralize }} available
+                        </p>
+                    </div>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                        Can be promoted if position is high enough
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Waitlist Statistics -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Waitlist Statistics</h3>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Total Waitlisted</span>
+                    <span class="font-medium text-gray-800 dark:text-white">{{ total_waitlisted }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">In This Class</span>
+                    <span class="font-medium text-gray-800 dark:text-white">{{ class_waitlisted }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Average Wait Time</span>
+                    <span class="font-medium text-gray-800 dark:text-white">14 days</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Promotion Rate</span>
+                    <span class="font-medium text-gray-800 dark:text-white">32%</span>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Based on last 30 days of waitlist data
+                </div>
+            </div>
+        </div>
+    </div>
+   <!-- Recent Waitlist Activity -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Recent Waitlist Activity</h3>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-arrow-up text-green-600 dark:text-green-400 text-xs"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">Application #APP-202401-0015</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Promoted from waitlist position #3</p>
+                    </div>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">2 days ago</span>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-sort-numeric-down text-purple-600 dark:text-purple-400 text-xs"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">Waitlist Reordered</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">5 applications repositioned</p>
+                    </div>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">5 days ago</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const positionInput = document.getElementById('{{ form.waitlist_position.id_for_label }}');
+    const moveUpBtn = document.getElementById('moveUpBtn');
+    const moveDownBtn = document.getElementById('moveDownBtn');
+    const moveToTopBtn = document.getElementById('moveToTopBtn');
+    const autoPositionBtn = document.getElementById('autoPositionBtn');
+    const keepWaitlistedRadio = document.getElementById('keep_waitlisted');
+    const changeDecisionRadio = document.getElementById('change_decision');
+    const changeDecisionOptions = document.getElementById('changeDecisionOptions');
+    
+    // Current position
+    let currentPosition = {{ object.waitlist_position|default:0 }};
+    
+    // Move up button
+    moveUpBtn.addEventListener('click', function() {
+        if (positionInput.value && positionInput.value > 1) {
+            positionInput.value = parseInt(positionInput.value) - 1;
+            positionInput.dispatchEvent(new Event('input'));
+        }
+    });
+    
+    // Move down button
+    moveDownBtn.addEventListener('click', function() {
+        if (positionInput.value) {
+            positionInput.value = parseInt(positionInput.value) + 1;
+            positionInput.dispatchEvent(new Event('input'));
+        }
+    });
+    
+    // Move to top button
+    moveToTopBtn.addEventListener('click', function() {
+        positionInput.value = 1;
+        positionInput.dispatchEvent(new Event('input'));
+    });
+    
+    // Auto-calculate position
+    autoPositionBtn.addEventListener('click', function() {
+        // In a real app, this would make an API call
+        // For now, simulate getting next available position
+        const nextPosition = {{ next_available_position|default:currentPosition|add:1 }};
+        positionInput.value = nextPosition;
+        positionInput.dispatchEvent(new Event('input'));
+        
+        // Show feedback
+        const originalText = this.textContent;
+        this.textContent = 'Calculated!';
+        this.classList.add('bg-green-100', 'dark:bg-green-900/30', 'text-green-600', 'dark:text-green-400');
+        this.classList.remove('border-gray-300', 'dark:border-gray-600', 'text-gray-700', 'dark:text-gray-300');
+        
+        setTimeout(() => {
+            this.textContent = originalText;
+            this.classList.remove('bg-green-100', 'dark:bg-green-900/30', 'text-green-600', 'dark:text-green-400');
+            this.classList.add('border-gray-300', 'dark:border-gray-600', 'text-gray-700', 'dark:text-gray-300');
+        }, 2000);
+    });
+    
+    // Toggle change decision options
+    function toggleDecisionOptions() {
+        if (changeDecisionRadio.checked) {
+            changeDecisionOptions.classList.remove('hidden');
+        } else {
+            changeDecisionOptions.classList.add('hidden');
+        }
+    }
+    
+    keepWaitlistedRadio.addEventListener('change', toggleDecisionOptions);
+    changeDecisionRadio.addEventListener('change', toggleDecisionOptions);
+    
+    // Highlight selected status option
+    document.querySelectorAll('.status-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.status-option label').forEach(label => {
+                label.classList.remove('ring-2', 'ring-offset-2');
+            });
+            if (this.checked) {
+                const label = this.nextElementSibling;
+                if (label) {
+                    if (this.value === 'waitlisted') {
+                        label.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2');
+                    } else {
+                        label.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                    }
+                }
+            }
+        });
+        
+        // Trigger change on page load
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Form validation
+    const form = document.getElementById('waitlistForm');
+    form.addEventListener('submit', function(e) {
+        if (positionInput.value) {
+            const newPosition = parseInt(positionInput.value);
+            if (newPosition < 1) {
+                e.preventDefault();
+                alert('Position must be at least 1');
+                positionInput.focus();
+                return;
+            }
+        }
+        
+        const studentName = '{{ object.full_name|escapejs }}';
+        const confirmMessage = `Update waitlist position for ${studentName}?`;
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Position input validation
+    if (positionInput) {
+        positionInput.addEventListener('input', function() {
+            const value = this.value;
+            if (value && (isNaN(value) || value < 1)) {
+                this.classList.add('border-red-300', 'dark:border-red-700');
+                this.classList.remove('border-gray-300', 'dark:border-gray-600');
+            } else {
+                this.classList.remove('border-red-300', 'dark:border-red-700');
+                this.classList.add('border-gray-300', 'dark:border-gray-600');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

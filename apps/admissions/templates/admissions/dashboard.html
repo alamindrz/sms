@@ -1,165 +1,569 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load admission_filters %}
 
-{% block title %}Admissions Dashboard{% endblock %}
+{% block title %}Admission Dashboard - EduSys Pro{% endblock %}
+{% block page_title %}Admission Dashboard{% endblock %}
+{% block page_subtitle %}Overview of admission applications and statistics{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:application_list' %}" 
+       class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        <i class="fas fa-list mr-2"></i>View All Applications
+    </a>
+    <a href="{% url 'admissions:student_creation_dashboard' %}" 
+       class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        <i class="fas fa-user-plus mr-2"></i>Student Creation
+    </a>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h1>Admissions Dashboard</h1>
-        </div>
-    </div>
-    
-    <!-- Stats Cards -->
-    <div class="row">
-        <div class="col-md-3 col-sm-6">
-            <div class="info-box bg-info">
-                <span class="info-box-icon"><i class="fas fa-file-alt"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Total Applications</span>
-                    <span class="info-box-number">{{ total_applications }}</span>
-                </div>
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <!-- Total Applications -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Total Applications</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ total_applications }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <i class="fas fa-file-alt text-indigo-600 dark:text-indigo-400 text-xl"></i>
             </div>
         </div>
-        
-        <div class="col-md-3 col-sm-6">
-            <div class="info-box bg-warning">
-                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Needs Review</span>
-                    <span class="info-box-number">{{ needs_review }}</span>
-                </div>
+        <div class="mt-4">
+            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>This Month</span>
+                <span>+12%</span>
             </div>
-        </div>
-        
-        <div class="col-md-3 col-sm-6">
-            <div class="info-box bg-danger">
-                <span class="info-box-icon"><i class="fas fa-gavel"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Needs Decision</span>
-                    <span class="info-box-number">{{ needs_decision }}</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3 col-sm-6">
-            <div class="info-box bg-success">
-                <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Payments Verified</span>
-                    <span class="info-box-number">{{ payment_stats.verified }}</span>
-                </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: 65%"></div>
             </div>
         </div>
     </div>
-    
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Quick Actions</h3>
-                </div>
-                <div class="card-body">
-                    <a href="{% url 'admissions:application_list' %}" class="btn btn-primary">
-                        <i class="fas fa-list"></i> View All Applications
-                    </a>
-                    <a href="{% url 'admissions:bulk_verify_payments' %}" class="btn btn-warning">
-                        <i class="fas fa-bulk"></i> Bulk Verify Payments
-                    </a>
-                    <a href="{% url 'admissions:bulk_decision' %}" class="btn btn-danger">
-                        <i class="fas fa-gavel"></i> Bulk Decisions
-                    </a>
-                    <a href="{% url 'admissions:waitlist_dashboard' %}" class="btn btn-info">
-                        <i class="fas fa-hourglass-half"></i> Manage Waitlist
-                    </a>
-                </div>
+
+    <!-- Needs Review -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Needs Review</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ needs_review }}</p>
             </div>
+            <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <i class="fas fa-search text-amber-600 dark:text-amber-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <a href="{% url 'admissions:application_list' %}?status=pending&payment_status=verified" 
+               class="inline-flex items-center text-sm text-amber-600 dark:text-amber-400 hover:underline">
+                <i class="fas fa-arrow-right mr-1"></i> Review Now
+            </a>
         </div>
     </div>
-    
-    <!-- Recent Activity -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Recent Activity</h3>
-                </div>
-                <div class="card-body p-0">
-                    <ul class="nav nav-pills flex-column">
-                        {% for log in recent_logs %}
-                        <li class="nav-item">
-                            <a href="{% url 'admissions:application_detail' log.application.pk %}" class="nav-link">
-                                <span class="badge bg-{{ log.application.get_status_badge_class }} mr-2">
-                                    {{ log.get_action_display }}
-                                </span>
-                                {{ log.application.application_number }}
-                                <span class="float-right text-muted text-sm">
-                                    {{ log.created_at|timesince }} ago
-                                </span>
-                            </a>
-                        </li>
-                        {% empty %}
-                        <li class="nav-item p-3 text-center text-muted">
-                            No recent activity
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+
+    <!-- Needs Decision -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Needs Decision</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">{{ needs_decision }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <i class="fas fa-bullhorn text-blue-600 dark:text-blue-400 text-xl"></i>
             </div>
         </div>
-        
-        <!-- Status Breakdown -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Application Status</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for stat in status_counts %}
-                        <div class="col-6">
-                            <div class="callout callout-{{ stat.status|lower }}">
-                                <small class="text-muted">{{ stat.status|title }}</small><br>
-                                <strong class="h4">{{ stat.count }}</strong>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
+        <div class="mt-4">
+            <a href="{% url 'admissions:application_list' %}?status=under_review" 
+               class="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <i class="fas fa-arrow-right mr-1"></i> Decide Now
+            </a>
+        </div>
+    </div>
+
+    <!-- Approved -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Approved</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">
+                    {% for stat in status_counts %}
+                        {% if stat.status == 'approved' %}
+                            {{ stat.count }}
+                        {% endif %}
+                    {% endfor %}
+                </p>
             </div>
-            
-            <!-- Payment Status -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h3 class="card-title">Payment Status</h3>
-                </div>
-                <div class="card-body">
-                    <div class="progress-group">
-                        Verified
-                        <span class="float-right"><b>{{ payment_stats.verified }}</b>/{{ total_applications }}</span>
-                        <div class="progress progress-sm">
-                            <div class="progress-bar bg-success" style="width: {% widthratio payment_stats.verified total_applications 100 %}%"></div>
-                        </div>
-                    </div>
-                    <div class="progress-group">
-                        Pending Verification
-                        <span class="float-right"><b>{{ payment_stats.unverified }}</b>/{{ total_applications }}</span>
-                        <div class="progress progress-sm">
-                            <div class="progress-bar bg-warning" style="width: {% widthratio payment_stats.unverified total_applications 100 %}%"></div>
-                        </div>
-                    </div>
-                    <div class="progress-group">
-                        Unpaid
-                        <span class="float-right"><b>{{ payment_stats.unpaid }}</b>/{{ total_applications }}</span>
-                        <div class="progress progress-sm">
-                            <div class="progress-bar bg-danger" style="width: {% widthratio payment_stats.unpaid total_applications 100 %}%"></div>
-                        </div>
-                    </div>
-                </div>
+            <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Ready for Students</span>
+                <span>{{ ready_for_students }}</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                <div class="bg-green-600 h-1.5 rounded-full" style="width: 45%"></div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Main Dashboard Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Status & Payment Charts -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Status Distribution -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Application Status Distribution</h3>
+                <a href="{% url 'admissions:application_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                    View All
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {% for stat in status_counts %}
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center
+                        {% if stat.status == 'pending' %}bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400
+                        {% elif stat.status == 'under_review' %}bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400
+                        {% elif stat.status == 'approved' %}bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400
+                        {% elif stat.status == 'rejected' %}bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400
+                        {% elif stat.status == 'waitlisted' %}bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400
+                        {% else %}bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400{% endif %}">
+                        <span class="text-xl font-bold">{{ stat.count }}</span>
+                    </div>
+                    <p class="text-xs font-medium text-gray-800 dark:text-white">{{ stat.get_status_display }}</p>
+                    {% if total_applications > 0 %}
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        {% widthratio stat.count total_applications 100 %}%
+                    </p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="col-span-5 text-center py-4">
+                    <p class="text-gray-500 dark:text-gray-400">No application data available</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Status Progress Bars -->
+            <div class="mt-6 space-y-3">
+                {% for stat in status_counts %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-700 dark:text-gray-300">{{ stat.get_status_display }}</span>
+                        <span class="font-medium text-gray-800 dark:text-white">{{ stat.count }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div class="h-2 rounded-full 
+                            {% if stat.status == 'pending' %}bg-amber-500
+                            {% elif stat.status == 'under_review' %}bg-blue-500
+                            {% elif stat.status == 'approved' %}bg-green-500
+                            {% elif stat.status == 'rejected' %}bg-red-500
+                            {% elif stat.status == 'waitlisted' %}bg-purple-500
+                            {% else %}bg-gray-500{% endif %}" 
+                             style="width: {% widthratio stat.count total_applications 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Payment Status -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Payment Status</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                            <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-green-800 dark:text-green-300">{{ payment_stats.verified }}</p>
+                            <p class="text-sm text-green-700 dark:text-green-400">Verified</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
+                            <i class="fas fa-clock text-amber-600 dark:text-amber-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-amber-800 dark:text-amber-300">{{ payment_stats.unverified }}</p>
+                            <p class="text-sm text-amber-700 dark:text-amber-400">Unverified</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                            <i class="fas fa-times-circle text-red-600 dark:text-red-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-red-800 dark:text-red-300">{{ payment_stats.unpaid }}</p>
+                            <p class="text-sm text-red-700 dark:text-red-400">Unpaid</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3">
+                <a href="{% url 'admissions:bulk_verify_payments' %}" 
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-bolt mr-2"></i>Bulk Verify
+                </a>
+                <a href="{% url 'admissions:application_list' %}?payment_status=unverified" 
+                   class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+                    <i class="fas fa-search mr-2"></i>Review Unverified
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Activity</h3>
+                <a href="#" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                    View All Logs
+                </a>
+            </div>
+            
+            <div class="space-y-4">
+                {% for log in recent_logs %}
+                <div class="flex items-start">
+                    <div class="w-8 h-8 rounded-full 
+                        {% if log.action == 'MOVED_TO_REVIEW' %}bg-blue-100 dark:bg-blue-900/30
+                        {% elif 'APPROVE' in log.action %}bg-green-100 dark:bg-green-900/30
+                        {% elif 'REJECT' in log.action %}bg-red-100 dark:bg-red-900/30
+                        {% elif 'WAITLIST' in log.action %}bg-purple-100 dark:bg-purple-900/30
+                        {% else %}bg-gray-100 dark:bg-gray-900/30{% endif %} 
+                        flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="fas 
+                            {% if log.action == 'MOVED_TO_REVIEW' %}fa-search text-blue-600 dark:text-blue-400
+                            {% elif 'APPROVE' in log.action %}fa-check text-green-600 dark:text-green-400
+                            {% elif 'REJECT' in log.action %}fa-times text-red-600 dark:text-red-400
+                            {% elif 'WAITLIST' in log.action %}fa-list-ol text-purple-600 dark:text-purple-400
+                            {% else %}fa-history text-gray-600 dark:text-gray-400{% endif %} 
+                            text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between">
+                            <p class="text-sm font-medium text-gray-800 dark:text-white truncate">
+                                {{ log.application.application_number }} - {{ log.application.full_name }}
+                            </p>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                                {{ log.created_at|timesince }} ago
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {{ log.action|title }}
+                            {% if log.notes %}: {{ log.notes|truncatechars:50 }}{% endif %}
+                        </p>
+                        <div class="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span>by {{ log.staff }}</span>
+                            <span class="mx-2">•</span>
+                            <span class="px-1.5 py-0.5 rounded {{ log.from_status|get_status_class }} mr-2">
+                                {{ log.get_from_status_display }}
+                            </span>
+                            <i class="fas fa-arrow-right mx-1"></i>
+                            <span class="px-1.5 py-0.5 rounded {{ log.to_status|get_status_class }}">
+                                {{ log.get_to_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <p class="text-gray-500 dark:text-gray-400">No recent activity</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Quick Actions & Alerts -->
+    <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h3>
+            <div class="space-y-3">
+                <a href="{% url 'admissions:application_create' %}" 
+                   class="flex items-center p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors group">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/40">
+                        <i class="fas fa-plus text-indigo-600 dark:text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">New Application</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Create application manually</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'admissions:bulk_decision' %}" 
+                   class="flex items-center p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors group">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 group-hover:bg-green-200 dark:group-hover:bg-green-900/40">
+                        <i class="fas fa-bullhorn text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Bulk Decision</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Approve/reject multiple apps</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'admissions:waitlist_dashboard' %}" 
+                   class="flex items-center p-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors group">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/40">
+                        <i class="fas fa-list-ol text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Waitlist Management</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Manage waitlisted apps</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'admissions:student_creation_dashboard' %}" 
+                   class="flex items-center p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/40">
+                        <i class="fas fa-user-plus text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800 dark:text-white">Student Creation</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Create students from apps</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Alerts & Notifications -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Alerts</h3>
+            
+            <div class="space-y-3">
+                {% if needs_review > 0 %}
+                <div class="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>
+                        <p class="text-sm font-medium text-amber-800 dark:text-amber-300">
+                            {{ needs_review }} application{{ needs_review|pluralize }} need{{ needs_review|pluralize:"s," }} review
+                        </p>
+                    </div>
+                    <a href="{% url 'admissions:application_list' %}?status=pending&payment_status=verified" 
+                       class="text-xs text-amber-600 dark:text-amber-400 hover:underline mt-1 block">
+                        Review now →
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if needs_decision > 0 %}
+                <div class="p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+                    <div class="flex items-center">
+                        <i class="fas fa-bullhorn text-blue-500 mr-2"></i>
+                        <p class="text-sm font-medium text-blue-800 dark:text-blue-300">
+                            {{ needs_decision }} application{{ needs_decision|pluralize }} need{{ needs_decision|pluralize:"s," }} decision
+                        </p>
+                    </div>
+                    <a href="{% url 'admissions:application_list' %}?status=under_review" 
+                       class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 block">
+                        Decide now →
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if payment_stats.unverified > 5 %}
+                <div class="p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                    <div class="flex items-center">
+                        <i class="fas fa-clock text-red-500 mr-2"></i>
+                        <p class="text-sm font-medium text-red-800 dark:text-red-300">
+                            {{ payment_stats.unverified }} unverified payments
+                        </p>
+                    </div>
+                    <a href="{% url 'admissions:bulk_verify_payments' %}" 
+                       class="text-xs text-red-600 dark:text-red-400 hover:underline mt-1 block">
+                        Bulk verify →
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if not needs_review and not needs_decision and payment_stats.unverified <= 5 %}
+                <div class="p-3 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        <p class="text-sm font-medium text-green-800 dark:text-green-300">
+                            All caught up!
+                        </p>
+                    </div>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                        No pending actions required
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Class Capacity Summary -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Class Capacity</h3>
+            
+            <div class="space-y-3">
+                {% for class in class_capacities|slice:":3" %}
+                <div class="p-3 rounded-lg border 
+                    {% if class.is_full %}border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20
+                    {% elif class.available < 5 %}border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20
+                    {% else %}border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20{% endif %}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-medium text-gray-800 dark:text-white">{{ class.class }}</h4>
+                        <span class="text-sm font-medium 
+                            {% if class.is_full %}text-red-600 dark:text-red-400
+                            {% elif class.available < 5 %}text-amber-600 dark:text-amber-400
+                            {% else %}text-green-600 dark:text-green-400{% endif %}">
+                            {{ class.current }}/{{ class.max }}
+                        </span>
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-1">
+                        <div class="h-1.5 rounded-full 
+                            {% if class.is_full %}bg-red-600
+                            {% elif class.available < 5 %}bg-amber-600
+                            {% else %}bg-green-600{% endif %}" 
+                             style="width: {% widthratio class.current class.max 100 %}%">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>{{ class.available }} available</span>
+                        {% if class.waitlisted %}
+                        <span class="text-purple-600 dark:text-purple-400">
+                            <i class="fas fa-list-ol mr-1"></i>{{ class.waitlisted }} waitlisted
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <a href="{% url 'admissions:waitlist_dashboard' %}" 
+                   class="block text-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline pt-2">
+                    View all classes →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Stats -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Weekly Statistics</h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">New Applications</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-1">24</p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                    +8%
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Approved</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-1">18</p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                    +12%
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Rejected</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-1">3</p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                    -2%
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Avg. Processing Time</p>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white mt-1">2.4d</p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                    -0.5d
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh dashboard every 60 seconds
+    let refreshTimer = null;
+    
+    function refreshDashboard() {
+        // Use HTMX to refresh the dashboard content
+        const dashboardContent = document.querySelector('[hx-trigger="every 60s"]');
+        if (dashboardContent && typeof htmx !== 'undefined') {
+            htmx.trigger(dashboardContent, 'refresh');
+        }
+    }
+    
+    // Start auto-refresh
+    refreshTimer = setInterval(refreshDashboard, 60000);
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        if (refreshTimer) {
+            clearInterval(refreshTimer);
+        }
+    });
+    
+    // Update time ago texts
+    function updateTimeAgo() {
+        document.querySelectorAll('[data-time]').forEach(element => {
+            const time = new Date(element.dataset.time);
+            const now = new Date();
+            const diff = Math.floor((now - time) / 1000);
+            
+            if (diff < 60) {
+                element.textContent = 'just now';
+            } else if (diff < 3600) {
+                const minutes = Math.floor(diff / 60);
+                element.textContent = `${minutes}m ago`;
+            } else if (diff < 86400) {
+                const hours = Math.floor(diff / 3600);
+                element.textContent = `${hours}h ago`;
+            } else {
+                const days = Math.floor(diff / 86400);
+                element.textContent = `${days}d ago`;
+            }
+        });
+    }
+    
+    // Initial update
+    updateTimeAgo();
+    
+    // Update every minute
+    setInterval(updateTimeAgo, 60000);
+});
+</script>
+{% endblock %}
 {% endblock %}

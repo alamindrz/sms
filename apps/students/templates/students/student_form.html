@@ -1,30 +1,409 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 
+{% block page_title %}{% if form.instance.pk %}Edit{% else %}Add New{% endif %} Student{% endblock %}
+{% block page_subtitle %}{% if form.instance.pk %}Update student information{% else %}Register a new student{% endif %}{% endblock %}
 
-{% block title %}
+{% block header_actions %}
+<a href="{% url 'students:student_list' %}" class="btn btn-secondary flex items-center space-x-2">
+  <i class="fas fa-arrow-left"></i>
+  <span>Back to List</span>
+</a>
+{% endblock %}
 
-  {% if object %}
-    Update {{ object }}
-  {% else %}
-    Add new student
-  {% endif %}
-
-{% endblock title %}
-
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'corecode:home' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">Students</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Add{% endif %}</li>
+{% endblock %}
 
 {% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <!-- Form Header -->
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-800 dark:text-white">
+      {% if form.instance.pk %}
+        Edit Student: {{ form.instance.full_name }}
+      {% else %}
+        Register New Student
+      {% endif %}
+    </h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+      Fill in the student's information below. Fields marked with * are required.
+    </p>
+  </div>
 
-<form action="" method="POST" enctype="multipart/form-data">
-  {% csrf_token %}
+  <!-- Form -->
+  <form method="post" enctype="multipart/form-data" class="p-6">
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <div class="flex items-center">
+        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+        <div>
+          <h4 class="text-sm font-medium text-red-800 dark:text-red-300">Please correct the errors below</h4>
+          <ul class="mt-1 text-sm text-red-700 dark:text-red-400">
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
-  {% include 'corecode/form_snippet.html' %}
+    <!-- Basic Information -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <i class="fas fa-user text-indigo-500 mr-2"></i>
+        Basic Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Surname -->
+        <div>
+          <label for="{{ form.surname.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Surname *
+          </label>
+          {% render_field form.surname class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" %}
+          {% if form.surname.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.surname.errors }}</div>
+          {% endif %}
+        </div>
 
-  {% if object %}
-    <input type="submit" class="btn btn-primary" value="Update Record">
-  {% else %}
-    <input type="submit" class="btn btn-primary" value="Add new student">
-  {% endif %}
-</form>
+        <!-- First Name -->
+        <div>
+          <label for="{{ form.firstname.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            First Name *
+          </label>
+          {% render_field form.firstname class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" %}
+          {% if form.firstname.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.firstname.errors }}</div>
+          {% endif %}
+        </div>
 
+        <!-- Other Name -->
+        <div>
+          <label for="{{ form.other_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Other Name
+          </label>
+          {% render_field form.other_name class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" %}
+        </div>
 
-{% endblock content %}
+        <!-- Gender -->
+        <div>
+          <label for="{{ form.gender.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Gender *
+          </label>
+          <div class="relative">
+            {% render_field form.gender class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+          </div>
+          {% if form.gender.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.gender.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Date of Birth -->
+        <div>
+          <label for="{{ form.date_of_birth.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Date of Birth *
+          </label>
+          {% render_field form.date_of_birth type="date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" %}
+          {% if form.date_of_birth.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.date_of_birth.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Passport Photo -->
+        <div>
+          <label for="{{ form.passport.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Passport Photo
+          </label>
+          <div class="mt-1 flex items-center">
+            {% if form.instance.passport %}
+            <img id="passport-preview" src="{{ form.instance.passport.url }}" alt="Passport" class="h-20 w-20 rounded-full object-cover mr-4 border-2 border-gray-300 dark:border-gray-600">
+            {% else %}
+            <div id="passport-preview" class="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold mr-4">
+              <i class="fas fa-user text-2xl"></i>
+            </div>
+            {% endif %}
+            <div class="flex-1">
+              <input type="file" name="{{ form.passport.name }}" id="{{ form.passport.id_for_label }}" 
+                     class="hidden" accept="image/*" onchange="previewPassport(event)">
+              <label for="{{ form.passport.id_for_label }}" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-camera mr-2"></i>
+                Choose Photo
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <i class="fas fa-address-card text-indigo-500 mr-2"></i>
+        Contact Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Mobile Number -->
+        <div>
+          <label for="{{ form.mobile_number.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Mobile Number
+          </label>
+          {% render_field form.mobile_number class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="+234 800 000 0000" %}
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Email Address
+          </label>
+          {% render_field form.email class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="student@example.com" %}
+        </div>
+
+        <!-- Address -->
+        <div class="md:col-span-2">
+          <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Address
+          </label>
+          {% render_field form.address rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter full address" %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <i class="fas fa-graduation-cap text-indigo-500 mr-2"></i>
+        Academic Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Current Class -->
+        <div>
+          <label for="{{ form.current_class.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Current Class *
+          </label>
+          <div class="relative">
+            {% render_field form.current_class class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+          </div>
+          {% if form.current_class.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.current_class.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Current Session -->
+        <div>
+          <label for="{{ form.current_session.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Academic Session *
+          </label>
+          <div class="relative">
+            {% render_field form.current_session class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+          </div>
+          {% if form.current_session.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.current_session.errors }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical Information -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <i class="fas fa-heartbeat text-indigo-500 mr-2"></i>
+        Medical Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Medical Conditions -->
+        <div>
+          <label for="{{ form.medical_conditions.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Medical Conditions
+          </label>
+          {% render_field form.medical_conditions rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Any medical conditions to note" %}
+        </div>
+
+        <!-- Allergies -->
+        <div>
+          <label for="{{ form.allergies.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Allergies
+          </label>
+          {% render_field form.allergies rows="3" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Any known allergies" %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Guardian Information -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <i class="fas fa-user-friends text-indigo-500 mr-2"></i>
+        Guardian Information
+      </h3>
+      <div class="mb-4">
+        <label for="{{ form.guardian.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Select Guardian *
+        </label>
+        <div class="relative">
+          {% render_field form.guardian class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+          <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+        </div>
+        {% if form.guardian.errors %}
+        <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.guardian.errors }}</div>
+        {% endif %}
+      </div>
+      
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Can't find the guardian? Add a new one first.
+        </p>
+        <a href="{% url 'students:guardian_create' %}" target="_blank" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <i class="fas fa-user-plus mr-2"></i>
+          Add New Guardian
+        </a>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <i class="fas fa-info-circle text-indigo-500 mr-2"></i>
+        Status
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Status -->
+        <div>
+          <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Status *
+          </label>
+          <div class="relative">
+            {% render_field form.status class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none" %}
+            <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+          </div>
+          {% if form.status.errors %}
+          <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.status.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Admission Date -->
+        <div>
+          <label for="{{ form.admission_date.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Admission Date
+          </label>
+          {% render_field form.admission_date type="date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="pt-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        <i class="fas fa-info-circle mr-1"></i>
+        All changes are saved immediately
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="{% url 'students:student_list' %}" class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          Cancel
+        </a>
+        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors flex items-center space-x-2">
+          <i class="fas fa-save"></i>
+          <span>{% if form.instance.pk %}Update Student{% else %}Create Student{% endif %}</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Passport photo preview
+  function previewPassport(event) {
+    const input = event.target;
+    const preview = document.getElementById('passport-preview');
+    
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        // Replace the preview div with an image
+        if (preview.tagName.toLowerCase() === 'div') {
+          const img = document.createElement('img');
+          img.id = 'passport-preview';
+          img.src = e.target.result;
+          img.alt = 'Passport Preview';
+          img.className = 'h-20 w-20 rounded-full object-cover mr-4 border-2 border-gray-300 dark:border-gray-600';
+          preview.parentNode.replaceChild(img, preview);
+        } else {
+          preview.src = e.target.result;
+        }
+      }
+      
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Form validation
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const requiredFields = document.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        isValid = false;
+        field.classList.add('border-red-500');
+        
+        // Add error message if not exists
+        if (!field.nextElementSibling || !field.nextElementSibling.classList.contains('field-error')) {
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'mt-1 text-sm text-red-600 dark:text-red-400 field-error';
+          errorDiv.textContent = 'This field is required';
+          field.parentNode.insertBefore(errorDiv, field.nextSibling);
+        }
+      } else {
+        field.classList.remove('border-red-500');
+        const errorDiv = field.nextElementSibling;
+        if (errorDiv && errorDiv.classList.contains('field-error')) {
+          errorDiv.remove();
+        }
+      }
+    });
+    
+    if (!isValid) {
+      e.preventDefault();
+      
+      // Scroll to first error
+      const firstError = document.querySelector('.border-red-500');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstError.focus();
+      }
+    }
+  });
+
+  // Auto-calculate age from date of birth
+  const dobField = document.getElementById('{{ form.date_of_birth.id_for_label }}');
+  if (dobField) {
+    dobField.addEventListener('change', function() {
+      const dob = new Date(this.value);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      
+      // Show age next to field
+      let ageDisplay = document.getElementById('age-display');
+      if (!ageDisplay) {
+        ageDisplay = document.createElement('div');
+        ageDisplay.id = 'age-display';
+        ageDisplay.className = 'mt-1 text-sm text-gray-600 dark:text-gray-400';
+        dobField.parentNode.appendChild(ageDisplay);
+      }
+      ageDisplay.textContent = `Age: ${age} years`;
+    });
+  }
+</script>
+{% endblock %}

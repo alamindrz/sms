@@ -1,232 +1,425 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Quick Student Creation - EduSys Pro{% endblock %}
+{% block page_title %}Quick Student Creation{% endblock %}
+{% block page_subtitle %}Create multiple students quickly using text input{% endblock %}
 
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block breadcrumbs %}
-<li class="breadcrumb-item"><a href="{% url 'admissions:student_creation_dashboard' %}">Student Creation</a></li>
-<li class="breadcrumb-item active">{{ title }}</li>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    .monospace {
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-    }
-    
-    .example-box {
-        background: #f8f9fa;
-        border-left: 4px solid #17a2b8;
-        padding: 15px;
-        margin-bottom: 20px;
-    }
-    
-    .counter {
-        position: absolute;
-        right: 10px;
-        top: 10px;
-        background: #6c757d;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 3px;
-        font-size: 0.8em;
-    }
-</style>
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:student_creation_dashboard' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Dashboard
+    </a>
+</div>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-bolt"></i> {{ title }}
-                    </h3>
+<div class="max-w-4xl mx-auto">
+    <!-- Instructions -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-start mb-4">
+            <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-bolt text-green-600 dark:text-green-400"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Quick Student Creation</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Create multiple students quickly by entering student data in a specific format. One student per line.
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">Format</h4>
                 </div>
-                
-                <form method="post" id="quick-form">
-                    {% csrf_token %}
+                <pre class="text-xs text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 p-2 rounded overflow-x-auto"><code>Surname, Firstname, Other Name, Gender, Date of Birth, Class</code></pre>
+                <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                    Separate fields with commas. Other Name is optional.
+                </p>
+            </div>
+            
+            <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-list text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Example</h4>
+                </div>
+                <pre class="text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 p-2 rounded overflow-x-auto"><code>{{ sample_data }}</code></pre>
+                <p class="text-xs text-green-600 dark:text-green-400 mt-2">
+                    Copy and paste from Excel/Google Sheets
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Creation Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="quickCreateForm">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Students Data -->
+                <div>
+                    <label for="{{ form.students_data.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Students Data *
+                    </label>
+                    {{ form.students_data }}
+                    {% if form.students_data.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.students_data.help_text }}</p>
+                    {% endif %}
+                    {% if form.students_data.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.students_data.errors }}</div>
+                    {% endif %}
                     
-                    <div class="card-body">
-                        <!-- Instructions -->
-                        <div class="alert alert-info">
-                            <h5><i class="fas fa-info-circle"></i> Instructions</h5>
-                            <p>Enter multiple students at once, one per line. Fields should be separated by commas.</p>
-                            <p class="mb-0"><strong>Format:</strong> Surname, Firstname, Other Names (optional), Gender, Date of Birth (YYYY-MM-DD), Class</p>
-                        </div>
-                        
-                        <!-- Student Data -->
-                        <div class="form-group">
-                            <label for="{{ form.students_data.id_for_label }}">
-                                {{ form.students_data.label }}
-                                <span class="counter" id="line-counter">0 lines</span>
-                            </label>
-                            {{ form.students_data }}
-                            {% if form.students_data.errors %}
-                            <div class="text-danger">
-                                {% for error in form.students_data.errors %}
-                                <div>{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            {% if form.students_data.help_text %}
-                            <small class="form-text text-muted">{{ form.students_data.help_text }}</small>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Example -->
-                        <div class="example-box">
-                            <h6>Example:</h6>
-                            <pre class="monospace mb-0">{{ sample_data }}</pre>
-                        </div>
-                        
-                        <!-- Common Settings -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.common_guardian.id_for_label }}">
-                                        {{ form.common_guardian.label }}
-                                    </label>
-                                    {{ form.common_guardian }}
-                                    {% if form.common_guardian.help_text %}
-                                    <small class="form-text text-muted">{{ form.common_guardian.help_text }}</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="{{ form.current_session.id_for_label }}">
-                                        {{ form.current_session.label }}
-                                    </label>
-                                    {{ form.current_session }}
-                                    {% if current_session %}
-                                    <small class="text-muted">Current session: {{ current_session.name }}</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Preview -->
-                        <div class="card card-secondary mt-3">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-eye"></i> Preview
-                                    <small id="preview-count">(0 students)</small>
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-sm" id="preview-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Surname</th>
-                                                <th>First Name</th>
-                                                <th>Other Name</th>
-                                                <th>Gender</th>
-                                                <th>Date of Birth</th>
-                                                <th>Class</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="preview-body">
-                                            <!-- Preview will be populated here -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                    <div class="mt-2 flex items-center justify-between">
+                        <span class="text-xs text-gray-500 dark:text-gray-400" id="studentCount">0 students</span>
+                        <button type="button" id="clearDataBtn" class="text-xs text-red-600 dark:text-red-400 hover:underline">
+                            Clear all
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Common Options -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Academic Session -->
+                    <div>
+                        <label for="{{ form.current_session.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Academic Session *
+                        </label>
+                        {{ form.current_session }}
+                        {% if form.current_session.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.current_session.help_text }}</p>
+                        {% endif %}
+                        {% if form.current_session.errors %}
+                        <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.current_session.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Common Guardian -->
+                    <div>
+                        <label for="{{ form.common_guardian.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Common Guardian (Optional)
+                        </label>
+                        {{ form.common_guardian }}
+                        {% if form.common_guardian.help_text %}
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.common_guardian.help_text }}</p>
+                        {% endif %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Assign same guardian to all students
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="hidden" id="previewSection">
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Preview</h4>
+                    
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div class="max-h-64 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">#</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Name</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Gender</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Date of Birth</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Class</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="previewTableBody">
+                                    <!-- Preview rows will be inserted here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                     
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-check-double"></i> Create Students
-                        </button>
-                        <a href="{% url 'admissions:student_creation_dashboard' %}" class="btn btn-default">
-                            Cancel
-                        </a>
-                        <button type="button" id="preview-btn" class="btn btn-info float-right">
-                            <i class="fas fa-sync"></i> Update Preview
-                        </button>
+                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="previewStats">
+                        0 valid students ready for creation
                     </div>
-                </form>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+                            <span id="formStatus">Enter student data above</span>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button type="button" id="previewBtn" 
+                                    class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled>
+                                <i class="fas fa-eye mr-2"></i>Preview
+                            </button>
+                            <button type="submit" 
+                                    id="submitButton"
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled>
+                                <i class="fas fa-bolt mr-2"></i>Create Students
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tips -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Tips</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg border border-green-200 dark:border-green-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Best Practices</h4>
+                </div>
+                <ul class="text-xs text-green-700 dark:text-green-400 space-y-1">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Copy from spreadsheet (Excel/Google Sheets)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Use consistent date format (YYYY-MM-DD)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Preview before creating</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-exclamation-triangle text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">Common Issues</h4>
+                </div>
+                <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                    <li class="flex items-start">
+                        <i class="fas fa-times text-xs mt-1 mr-2"></i>
+                        <span>Extra spaces around commas</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-times text-xs mt-1 mr-2"></i>
+                        <span>Incorrect date format</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-times text-xs mt-1 mr-2"></i>
+                        <span>Missing required fields</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const studentsData = document.getElementById('{{ form.students_data.id_for_label }}');
-    const lineCounter = document.getElementById('line-counter');
-    const previewBtn = document.getElementById('preview-btn');
-    const previewBody = document.getElementById('preview-body');
-    const previewCount = document.getElementById('preview-count');
+    const studentsDataTextarea = document.getElementById('{{ form.students_data.id_for_label }}');
+    const studentCountSpan = document.getElementById('studentCount');
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewSection = document.getElementById('previewSection');
+    const previewTableBody = document.getElementById('previewTableBody');
+    const previewStats = document.getElementById('previewStats');
+    const formStatus = document.getElementById('formStatus');
+    const submitButton = document.getElementById('submitButton');
     
-    // Count lines
-    function updateLineCount() {
-        const lines = studentsData.value.split('\n').filter(line => line.trim() !== '');
-        lineCounter.textContent = `${lines.length} lines`;
-    }
-    
-    // Parse and preview
-    function updatePreview() {
-        const lines = studentsData.value.split('\n').filter(line => line.trim() !== '');
-        let validCount = 0;
+    // Parse student data
+    function parseStudentData() {
+        const text = studentsDataTextarea.value.trim();
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
         
-        // Clear previous preview
-        previewBody.innerHTML = '';
+        let validCount = 0;
+        let errorCount = 0;
+        const students = [];
         
         lines.forEach((line, index) => {
             const parts = line.split(',').map(part => part.trim());
             
-            if (parts.length >= 5) {
-                const row = document.createElement('tr');
-                
-                // Add data
-                row.innerHTML = `
-                    <td>${parts[0] || ''}</td>
-                    <td>${parts[1] || ''}</td>
-                    <td>${parts[2] || ''}</td>
-                    <td>${parts[3] || ''}</td>
-                    <td>${parts[4] || ''}</td>
-                    <td>${parts[5] || ''}</td>
-                `;
+            if (parts.length >= 5) { // Minimum required fields
+                const student = {
+                    rawLine: line,
+                    lineNumber: index + 1,
+                    surname: parts[0] || '',
+                    firstname: parts[1] || '',
+                    otherName: parts[2] || '',
+                    gender: parts[3] || '',
+                    dateOfBirth: parts[4] || '',
+                    currentClass: parts[5] || '',
+                    isValid: false,
+                    errors: []
+                };
                 
                 // Validate
-                const isValid = parts[0] && parts[1] && parts[3] && parts[4];
-                if (isValid) {
-                    validCount++;
-                } else {
-                    row.style.backgroundColor = '#ffe6e6';
+                if (!student.surname) student.errors.push('Missing surname');
+                if (!student.firstname) student.errors.push('Missing firstname');
+                if (!student.gender) student.errors.push('Missing gender');
+                if (!student.dateOfBirth) student.errors.push('Missing date of birth');
+                
+                // Validate gender
+                if (student.gender && !['Male', 'Female', 'M', 'F'].includes(student.gender)) {
+                    student.errors.push('Invalid gender (use Male/Female)');
                 }
                 
-                previewBody.appendChild(row);
+                // Validate date
+                if (student.dateOfBirth) {
+                    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (!dateRegex.test(student.dateOfBirth)) {
+                        student.errors.push('Invalid date format (use YYYY-MM-DD)');
+                    }
+                }
+                
+                student.isValid = student.errors.length === 0;
+                if (student.isValid) validCount++;
+                else errorCount++;
+                
+                students.push(student);
+            } else {
+                errorCount++;
+                students.push({
+                    rawLine: line,
+                    lineNumber: index + 1,
+                    isValid: false,
+                    errors: ['Insufficient fields (need at least 5)']
+                });
             }
         });
         
-        previewCount.textContent = `(${validCount} valid students)`;
+        return { students, validCount, errorCount, total: lines.length };
+    }
+    
+    // Update student count
+    function updateStudentCount() {
+        const { total } = parseStudentData();
+        studentCountSpan.textContent = `${total} student${total !== 1 ? 's' : ''}`;
+        
+        // Enable/disable preview button
+        previewBtn.disabled = total === 0;
+        formStatus.textContent = total === 0 ? 'Enter student data above' : `${total} student${total !== 1 ? 's' : ''} entered`;
+    }
+    
+    // Update preview
+    function updatePreview() {
+        const { students, validCount, errorCount, total } = parseStudentData();
+        
+        // Clear preview table
+        previewTableBody.innerHTML = '';
+        
+        // Add rows
+        students.forEach((student, index) => {
+            const row = document.createElement('tr');
+            row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/30';
+            
+            if (student.isValid) {
+                row.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-gray-800 dark:text-white">${student.lineNumber}</td>
+                    <td class="px-4 py-2">
+                        <div class="text-sm font-medium text-gray-800 dark:text-white">${student.surname} ${student.firstname}</div>
+                        ${student.otherName ? `<div class="text-xs text-gray-500 dark:text-gray-400">${student.otherName}</div>` : ''}
+                    </td>
+                    <td class="px-4 py-2 text-sm text-gray-800 dark:text-white">${student.gender}</td>
+                    <td class="px-4 py-2 text-sm text-gray-800 dark:text-white">${student.dateOfBirth}</td>
+                    <td class="px-4 py-2 text-sm text-gray-800 dark:text-white">${student.currentClass || '-'}</td>
+                    <td class="px-4 py-2">
+                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                            Ready
+                        </span>
+                    </td>
+                `;
+            } else {
+                row.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-gray-800 dark:text-white">${student.lineNumber}</td>
+                    <td class="px-4 py-2 text-sm text-red-600 dark:text-red-400" colspan="5">
+                        <div class="font-medium">Line ${student.lineNumber}: ${student.errors[0] || 'Error'}</div>
+                        <div class="text-xs opacity-75">${student.rawLine}</div>
+                    </td>
+                `;
+            }
+            
+            previewTableBody.appendChild(row);
+        });
+        
+        // Update stats
+        previewStats.textContent = `${validCount} valid, ${errorCount} with errors`;
+        previewStats.className = `text-xs ${errorCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`;
+        
+        // Show/hide preview section
+        if (total > 0) {
+            previewSection.classList.remove('hidden');
+        } else {
+            previewSection.classList.add('hidden');
+        }
+        
+        // Update form status
+        formStatus.textContent = `${total} student${total !== 1 ? 's' : ''} - ${validCount} ready, ${errorCount} with errors`;
+        formStatus.className = `text-sm ${errorCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`;
+        
+        // Enable/disable submit button
+        submitButton.disabled = validCount === 0;
     }
     
     // Event listeners
-    studentsData.addEventListener('input', updateLineCount);
+    studentsDataTextarea.addEventListener('input', updateStudentCount);
+    
+    clearDataBtn.addEventListener('click', function() {
+        if (studentsDataTextarea.value.trim() && confirm('Clear all student data?')) {
+            studentsDataTextarea.value = '';
+            updateStudentCount();
+            previewSection.classList.add('hidden');
+            studentsDataTextarea.focus();
+        }
+    });
+    
     previewBtn.addEventListener('click', updatePreview);
     
-    // Initial update
-    updateLineCount();
-    updatePreview();
-    
-    // Auto-preview on input (debounced)
-    let previewTimeout;
-    studentsData.addEventListener('input', function() {
-        clearTimeout(previewTimeout);
-        previewTimeout = setTimeout(updatePreview, 1000);
+    // Form submission
+    const form = document.getElementById('quickCreateForm');
+    form.addEventListener('submit', function(e) {
+        const { validCount } = parseStudentData();
+        
+        if (validCount === 0) {
+            e.preventDefault();
+            alert('No valid student data to create. Please fix errors and try again.');
+            return;
+        }
+        
+        if (!confirm(`Create ${validCount} student(s)? This action cannot be undone.`)) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+        submitButton.disabled = true;
+        previewBtn.disabled = true;
     });
+    
+    // Paste formatting helper
+    studentsDataTextarea.addEventListener('paste', function(e) {
+        setTimeout(function() {
+            // Clean up pasted text - remove extra spaces around commas
+            let text = studentsDataTextarea.value;
+            text = text.replace(/\s*,\s*/g, ',')  // Normalize spaces around commas
+                      .replace(/\s+/g, ' ')       // Normalize multiple spaces
+                      .split('\n')
+                      .filter(line => line.trim().length > 0)
+                      .map(line => line.trim())
+                      .join('\n');
+            studentsDataTextarea.value = text;
+            updateStudentCount();
+        }, 0);
+    });
+    
+    // Initialize
+    updateStudentCount();
 });
 </script>
+{% endblock %}
 {% endblock %}

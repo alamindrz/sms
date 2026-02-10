@@ -1,317 +1,709 @@
+<!-- templates/corecode/class_student_list.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ student_class.name }} - Students{% endblock %}
+{% block title %}{{ student_class.name }} Students - EduSys Pro{% endblock %}
+{% block page_title %}{{ student_class.name }}{% endblock %}
+{% block page_subtitle %}Student list and management{% endblock %}
 
-{% block page_title %}{{ student_class.name }} - Students{% endblock %}
-
-{% block breadcrumbs %}
-<li class="breadcrumb-item"><a href="{% url 'corecode:enhanced_classes' %}">Classes</a></li>
-<li class="breadcrumb-item active">{{ student_class.name }}</li>
-{% endblock %}
-
-{% block content %}
-<div class="container-fluid">
-    <!-- Class Header -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h3>{{ student_class.name }}</h3>
-                            <p class="text-muted">
-                                Academic Session: {{ student_class.current_session|default:"Not set" }}
-                            </p>
-                        </div>
-                        <div class="col-md-6 text-right">
-                            <div class="btn-group">
-                                <a href="{% url 'corecode:enhanced_classes' %}" class="btn btn-default">
-                                    <i class="fas fa-arrow-left"></i> Back to Classes
-                                </a>
-                                <button type="button" class="btn btn-info" onclick="window.print()">
-                                    <i class="fas fa-print"></i> Print List
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Stats -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-info">
-                <div class="inner">
-                    <h3>{{ total_count }}</h3>
-                    <p>Total Students</p>
-                </div>
-                <div class="icon">
-                    <i class="fas fa-users"></i>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-success">
-                <div class="inner">
-                    <h3>{{ active_count }}</h3>
-                    <p>Active Students</p>
-                </div>
-                <div class="icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-warning">
-                <div class="inner">
-                    <h3>{{ inactive_count }}</h3>
-                    <p>Inactive Students</p>
-                </div>
-                <div class="icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-primary">
-                <div class="inner">
-                    <h3>{% widthratio active_count total_count 100 %}%</h3>
-                    <p>Activation Rate</p>
-                </div>
-                <div class="icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Filter Toggle -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="show-inactive" 
-                               {% if show_inactive %}checked{% endif %}
-                               onchange="toggleInactiveStudents()">
-                        <label class="form-check-label" for="show-inactive">
-                            Show Inactive Students ({{ inactive_count }})
-                        </label>
-                    </div>
-                    <small class="text-muted ml-3">
-                        Inactive students are shown in <span class="text-warning">yellow</span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Students Table -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Student List</h3>
-                    <div class="card-tools">
-                        <div class="input-group input-group-sm" style="width: 200px;">
-                            <input type="text" name="table_search" class="form-control float-right" 
-                                   placeholder="Search students..." id="student-search">
-                            <div class="input-group-append">
-                                <button type="submit" class="btn btn-default">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="students-table">
-                            <thead>
-                                <tr>
-                                    <th>Student ID</th>
-                                    <th>Name</th>
-                                    <th>Gender</th>
-                                    <th>Guardian</th>
-                                    <th>Status</th>
-                                    <th>Missing Requirements</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for student in students %}
-                                <tr class="{% if not student.is_activatable %}table-warning{% endif %}">
-                                    <td>
-                                        <strong>{{ student.student_number }}</strong>
-                                    </td>
-                                    <td>{{ student.full_name }}</td>
-                                    <td>{{ student.gender }}</td>
-                                    <td>
-                                        {% if student.guardian %}
-                                        {{ student.guardian.full_name|truncatechars:20 }}
-                                        {% else %}
-                                        <span class="text-danger">None</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if student.is_activatable %}
-                                        <span class="badge bg-success">Active</span>
-                                        {% else %}
-                                        <span class="badge bg-warning">Inactive</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% with missing=student.get_activation_requirements %}
-                                        {% if missing %}
-                                        <small>
-                                            {% for req in missing %}
-                                            <span class="badge bg-danger">{{ req }}</span>
-                                            {% endfor %}
-                                        </small>
-                                        {% else %}
-                                        <span class="text-success">All requirements met</span>
-                                        {% endif %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{% url 'admissions:student_detail' student.pk %}" 
-                                               class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            {% if not student.is_activatable %}
-                                            <a href="{% url 'admissions:student_activate' student.pk %}" 
-                                               class="btn btn-sm btn-warning">
-                                                <i class="fas fa-bolt"></i>
-                                            </a>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">
-                                        No students found in this class
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <div class="float-right">
-                        <small class="text-muted">
-                            Showing {{ students.count }} of {{ total_count }} students
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Activation Help -->
-    {% if inactive_count > 0 %}
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card card-warning">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-lightbulb"></i> Quick Activation
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <p>To activate inactive students, they need:</p>
-                    <ol>
-                        <li>A guardian/parent assigned</li>
-                        <li>A class assignment</li>
-                        <li>An academic session</li>
-                    </ol>
-                    <a href="{% url 'admissions:activation_wizard' %}?class={{ student_class.id }}" 
-                       class="btn btn-warning">
-                        <i class="fas fa-magic"></i> Use Activation Wizard
+{% block header_actions %}
+    <div class="flex items-center space-x-3">
+        <div class="relative group">
+            <button onclick="toggleStudentActions()"
+                    class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <i class="fas fa-user-plus mr-2"></i>Add Students
+                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+            </button>
+            <div id="studentActionsMenu" class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 hidden z-10">
+                <div class="py-1">
+                    <a href="{% url 'students:student_create' %}?class={{ student_class.id }}" 
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        <i class="fas fa-user-plus mr-2"></i>Add Single Student
+                    </a>
+                    <a href="{% url 'students:student_upload' %}?class={{ student_class.id }}" 
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        <i class="fas fa-upload mr-2"></i>Bulk Upload
+                    </a>
+                    <a href="{% url 'admissions:student_creation_dashboard' %}?class={{ student_class.id }}" 
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        <i class="fas fa-magic mr-2"></i>From Applications
                     </a>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-6">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-pie"></i> Activation Statistics
-                    </h3>
+        <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Show:</span>
+            <a href="?show_inactive=false" 
+               class="px-3 py-1 rounded-lg text-sm font-medium {% if not show_inactive %}bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}"
+               hx-boost="true">
+                Active ({{ active_count }})
+            </a>
+            <a href="?show_inactive=true" 
+               class="px-3 py-1 rounded-lg text-sm font-medium {% if show_inactive %}bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}"
+               hx-boost="true">
+                All ({{ total_count }})
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Class Header -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center mb-4">
+                    <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mr-4">
+                        <i class="fas fa-chalkboard-teacher text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">{{ student_class.name }}</h2>
+                        <p class="opacity-90">Class Student Management</p>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="chart">
-                        <canvas id="activationChart" style="min-height: 150px; height: 150px; max-height: 150px; max-width: 100%;"></canvas>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+                        <p class="text-sm opacity-90">Total Students</p>
+                        <p class="text-xl font-bold">{{ total_count }}</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+                        <p class="text-sm opacity-90">Active Students</p>
+                        <p class="text-xl font-bold">{{ active_count }}</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+                        <p class="text-sm opacity-90">Inactive Students</p>
+                        <p class="text-xl font-bold">{{ inactive_count }}</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+                        <p class="text-sm opacity-90">Activation Rate</p>
+                        <p class="text-xl font-bold">
+                            {% if total_count > 0 %}
+                                {% widthratio active_count total_count 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle inactive students
-    window.toggleInactiveStudents = function() {
-        const showInactive = document.getElementById('show-inactive').checked;
-        const url = new URL(window.location);
-        url.searchParams.set('show_inactive', showInactive);
-        window.location.href = url.toString();
-    };
-    
-    // Student search
-    const searchInput = document.getElementById('student-search');
-    const tableRows = document.querySelectorAll('#students-table tbody tr');
-    
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
+    <!-- Student Actions Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+            <div class="flex items-center space-x-4">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" 
+                           placeholder="Search students..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none w-64"
+                           id="studentSearch">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                
+                <!-- Status Filter -->
+                <select id="statusFilter" 
+                        class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="all">All Status</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
+                    <option value="no_guardian">No Guardian</option>
+                    <option value="no_session">No Session</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Bulk Actions -->
+                <div class="relative group">
+                    <button onclick="toggleBulkActions()"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-layer-group mr-2"></i>Bulk Actions
+                        <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                    </button>
+                    <div id="bulkActionsMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 hidden z-10">
+                        <div class="py-1">
+                            <button onclick="bulkActivateSelected()"
+                                    class="block w-full text-left px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fas fa-user-check mr-2"></i>Activate Selected
+                            </button>
+                            <button onclick="bulkAssignGuardian()"
+                                    class="block w-full text-left px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fas fa-user-friends mr-2"></i>Assign Guardian
+                            </button>
+                            <button onclick="bulkExport()"
+                                    class="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fas fa-download mr-2"></i>Export Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Export -->
+                <button onclick="exportClassList()"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors">
+                    <i class="fas fa-file-export mr-2"></i>Export
+                </button>
+            </div>
+        </div>
         
-        tableRows.forEach(row => {
-            const rowText = row.textContent.toLowerCase();
-            if (rowText.includes(searchTerm)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+        <!-- Selection Info -->
+        <div id="selectionInfo" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        <span id="selectedCount">0</span> students selected
+                    </span>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="selectAllStudents()"
+                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                            Select All
+                        </button>
+                        <span class="text-gray-400">|</span>
+                        <button onclick="clearSelection()"
+                                class="text-sm text-gray-600 dark:text-gray-400 hover:underline">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <button onclick="processBulkAction()"
+                            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-colors">
+                        <i class="fas fa-bolt mr-2"></i>Apply to Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- Table Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Students in {{ student_class.name }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Showing {{ students.count }} of {{ total_count }} students
+                </p>
+            </div>
+        </div>
+
+        <!-- Table Content -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <input type="checkbox" 
+                                   id="selectAllStudents" 
+                                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Student
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Admission No.
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Guardian
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="studentTableBody">
+                    {% for student in students %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors student-row"
+                        data-status="{% if student.is_active %}active{% else %}inactive{% endif %}"
+                        data-guardian="{% if student.guardian %}yes{% else %}no{% endif %}"
+                        data-session="{% if student.current_session %}yes{% else %}no{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="checkbox" 
+                                   value="{{ student.id }}" 
+                                   class="student-checkbox h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mr-3">
+                                    <i class="fas fa-user text-indigo-600 dark:text-indigo-400"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ student.first_name }} {{ student.last_name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ student.email|default:"No email" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ student.admission_number|default:"-" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if student.guardian %}
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-2">
+                                        <i class="fas fa-user-friends text-green-600 dark:text-green-400 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-gray-900 dark:text-white">
+                                            {{ student.guardian.first_name }} {{ student.guardian.last_name }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ student.guardian.phone|default:"No phone" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
+                                    <i class="fas fa-user-times mr-1"></i>No Guardian
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if student.is_active %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                                    <i class="fas fa-check-circle mr-1"></i>Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Inactive
+                                </span>
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {% if not student.guardian %}<div>• No guardian</div>{% endif %}
+                                    {% if not student.current_session %}<div>• No session</div>{% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'students:student_detail' student.pk %}" 
+                                   class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                                   title="View"
+                                   hx-boost="true">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'students:student_update' student.pk %}" 
+                                   class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                                   title="Edit"
+                                   hx-boost="true">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if not student.is_active %}
+                                <button onclick="activateStudent({{ student.pk }})"
+                                        class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                                        title="Activate">
+                                    <i class="fas fa-user-check"></i>
+                                </button>
+                                {% endif %}
+                                <a href="{% url 'students:student_delete' student.pk %}" 
+                                   class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                                   title="Delete"
+                                   hx-boost="true">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-users text-4xl mb-4"></i>
+                                <p class="text-lg font-medium">No students found</p>
+                                <p class="text-sm mt-2">
+                                    {% if show_inactive %}
+                                        This class has no students. Add some students to get started.
+                                    {% else %}
+                                        No active students found. Try showing all students.
+                                    {% endif %}
+                                </p>
+                                <div class="mt-4 flex space-x-3">
+                                    <a href="{% url 'students:student_create' %}?class={{ student_class.id }}" 
+                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:-translate-y-0.5"
+                                       hx-boost="true">
+                                        <i class="fas fa-user-plus mr-2"></i>Add Student
+                                    </a>
+                                    {% if not show_inactive and inactive_count > 0 %}
+                                    <a href="?show_inactive=true" 
+                                       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                       hx-boost="true">
+                                        <i class="fas fa-eye mr-2"></i>Show All ({{ total_count }})
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        {% if students.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-400">
+                    Showing {{ students.start_index }} to {{ students.end_index }} of {{ students.paginator.count }} students
+                </div>
+                <div class="flex space-x-2">
+                    {% if students.has_previous %}
+                    <a href="?page={{ students.previous_page_number }}{% if show_inactive %}&show_inactive=true{% endif %}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        <i class="fas fa-chevron-left mr-2"></i>Previous
+                    </a>
+                    {% endif %}
+                    
+                    <div class="flex space-x-1">
+                        {% for num in students.paginator.page_range %}
+                            {% if students.number == num %}
+                                <span class="inline-flex items-center px-4 py-2 border border-indigo-300 dark:border-indigo-600 text-sm font-medium rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+                                    {{ num }}
+                                </span>
+                            {% elif num > students.number|add:'-3' and num < students.number|add:'3' %}
+                                <a href="?page={{ num }}{% if show_inactive %}&show_inactive=true{% endif %}" 
+                                   class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                   hx-boost="true">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    {% if students.has_next %}
+                    <a href="?page={{ students.next_page_number }}{% if show_inactive %}&show_inactive=true{% endif %}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                       hx-boost="true">
+                        Next<i class="fas fa-chevron-right ml-2"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Activation Issues -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-800 dark:text-white mb-4">Activation Issues</h4>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">No Guardian</span>
+                    <span class="text-sm font-medium text-gray-800 dark:text-white">{{ no_guardian_count|default:"0" }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">No Session</span>
+                    <span class="text-sm font-medium text-gray-800 dark:text-white">{{ no_session_count|default:"0" }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Other Issues</span>
+                    <span class="text-sm font-medium text-gray-800 dark:text-white">{{ other_issues_count|default:"0" }}</span>
+                </div>
+            </div>
+            {% if inactive_count > 0 %}
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="activateAllClassStudents()"
+                        class="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-bolt mr-2"></i>Activate All ({{ inactive_count }})
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Class Summary -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-800 dark:text-white mb-4">Class Summary</h4>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex items-center justify-between text-sm mb-2">
+                        <span class="text-gray-600 dark:text-gray-400">Activation Rate</span>
+                        <span class="font-medium text-gray-900 dark:text-white">
+                            {% if total_count > 0 %}
+                                {% widthratio active_count total_count 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" 
+                             style="width: {% if total_count > 0 %}{% widthratio active_count total_count 100 %}%{% else %}0%{% endif %}"></div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ student_class.name }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Class Section</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h4>
+            <div class="space-y-3">
+                <a href="{% url 'result:result_create' %}?class={{ student_class.id }}" 
+                   class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                   hx-boost="true">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-chart-line text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">Enter Results</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Add exam results</p>
+                    </div>
+                </a>
+                <a href="{% url 'finance:bulk_invoice' %}?class={{ student_class.id }}" 
+                   class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-green-300 dark:hover:border-green-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                   hx-boost="true">
+                    <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-file-invoice-dollar text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">Generate Invoices</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Bulk fee invoices</p>
+                    </div>
+                </a>
+                <a href="{% url 'corecode:enhanced-class-list' %}" 
+                   class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-300 dark:hover:border-purple-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                   hx-boost="true">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                        <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white">View Analytics</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Class statistics</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Search and filter functionality
+    document.getElementById('studentSearch').addEventListener('input', filterStudents);
+    document.getElementById('statusFilter').addEventListener('change', filterStudents);
+    
+    function filterStudents() {
+        const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('.student-row');
+        
+        rows.forEach(row => {
+            const studentName = row.querySelector('.text-sm.font-medium').textContent.toLowerCase();
+            const studentStatus = row.dataset.status;
+            const hasGuardian = row.dataset.guardian;
+            const hasSession = row.dataset.session;
+            
+            let show = true;
+            
+            // Search filter
+            if (searchTerm && !studentName.includes(searchTerm)) {
+                show = false;
             }
+            
+            // Status filter
+            if (statusFilter !== 'all') {
+                switch(statusFilter) {
+                    case 'active':
+                        show = show && studentStatus === 'active';
+                        break;
+                    case 'inactive':
+                        show = show && studentStatus === 'inactive';
+                        break;
+                    case 'no_guardian':
+                        show = show && hasGuardian === 'no';
+                        break;
+                    case 'no_session':
+                        show = show && hasSession === 'no';
+                        break;
+                }
+            }
+            
+            row.style.display = show ? '' : 'none';
         });
+    }
+    
+    // Selection functionality
+    document.getElementById('selectAllStudents').addEventListener('change', function(e) {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+        });
+        updateSelectionInfo();
     });
     
-    // Activation chart
-    {% if inactive_count > 0 %}
-    const ctx = document.getElementById('activationChart').getContext('2d');
-    const activationChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Active', 'Inactive'],
-            datasets: [{
-                data: [{{ active_count }}, {{ inactive_count }}],
-                backgroundColor: ['#28a745', '#ffc107'],
-                hoverBackgroundColor: ['#218838', '#e0a800'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            responsive: true,
-            legend: {
-                position: 'bottom'
-            }
+    function updateSelectionInfo() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        const selectionInfo = document.getElementById('selectionInfo');
+        
+        document.getElementById('selectedCount').textContent = selected.length;
+        
+        if (selected.length > 0) {
+            selectionInfo.classList.remove('hidden');
+        } else {
+            selectionInfo.classList.add('hidden');
+        }
+    }
+    
+    document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectionInfo);
+    });
+    
+    function selectAllStudents() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(cb => cb.checked = true);
+        document.getElementById('selectAllStudents').checked = true;
+        updateSelectionInfo();
+    }
+    
+    function clearSelection() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        document.getElementById('selectAllStudents').checked = false;
+        updateSelectionInfo();
+    }
+    
+    // Dropdown menus
+    function toggleStudentActions() {
+        const menu = document.getElementById('studentActionsMenu');
+        menu.classList.toggle('hidden');
+    }
+    
+    function toggleBulkActions() {
+        const menu = document.getElementById('bulkActionsMenu');
+        menu.classList.toggle('hidden');
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.relative.group')) {
+            document.getElementById('studentActionsMenu').classList.add('hidden');
+            document.getElementById('bulkActionsMenu').classList.add('hidden');
         }
     });
-    {% endif %}
-});
+    
+    // Bulk actions
+    function bulkActivateSelected() {
+        const selectedIds = getSelectedStudentIds();
+        if (selectedIds.length === 0) {
+            showNotification('Please select students first', 'warning');
+            return;
+        }
+        
+        showNotification(`Activating ${selectedIds.length} students...`, 'info');
+        // Implement bulk activation
+    }
+    
+    function bulkAssignGuardian() {
+        const selectedIds = getSelectedStudentIds();
+        if (selectedIds.length === 0) {
+            showNotification('Please select students first', 'warning');
+            return;
+        }
+        
+        showNotification(`Assigning guardian to ${selectedIds.length} students...`, 'info');
+        // Implement guardian assignment
+    }
+    
+    function bulkExport() {
+        const selectedIds = getSelectedStudentIds();
+        if (selectedIds.length === 0) {
+            showNotification('Please select students first', 'warning');
+            return;
+        }
+        
+        showNotification(`Exporting ${selectedIds.length} students...`, 'info');
+        // Implement export
+    }
+    
+    function processBulkAction() {
+        const selectedIds = getSelectedStudentIds();
+        if (selectedIds.length === 0) {
+            showNotification('Please select students first', 'warning');
+            return;
+        }
+        
+        // Show action selection modal
+        showNotification(`Processing ${selectedIds.length} students...`, 'info');
+    }
+    
+    function getSelectedStudentIds() {
+        const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+    
+    // Individual student actions
+    function activateStudent(studentId) {
+        showNotification(`Activating student ${studentId}...`, 'info');
+        // Implement individual activation
+    }
+    
+    function activateAllClassStudents() {
+        if (confirm(`Are you sure you want to activate all ${ {{ inactive_count }} } inactive students in this class?`)) {
+            showNotification('Activating all students in class...', 'info');
+            // Implement class activation
+        }
+    }
+    
+    // Export
+    function exportClassList() {
+        showNotification('Exporting class list...', 'info');
+        // Implement export
+    }
+    
+    function showNotification(message, type = 'info') {
+        const types = {
+            'success': { icon: 'fa-check-circle', color: 'bg-green-500' },
+            'error': { icon: 'fa-exclamation-circle', color: 'bg-red-500' },
+            'info': { icon: 'fa-info-circle', color: 'bg-blue-500' },
+            'warning': { icon: 'fa-exclamation-triangle', color: 'bg-amber-500' }
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${types[type].color} text-white`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${types[type].icon} mr-3"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
 </script>
+
+<style>
+    .student-row {
+        transition: all 0.2s ease;
+    }
+    
+    .student-row:hover {
+        transform: translateX(2px);
+    }
+    
+    input[type="checkbox"]:checked + .student-info {
+        background-color: rgba(99, 102, 241, 0.1);
+        border-left: 3px solid #4f46e5;
+    }
+</style>
 {% endblock %}

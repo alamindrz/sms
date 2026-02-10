@@ -1,56 +1,378 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Bulk Payment Verification{% endblock %}
+{% block title %}Bulk Verify Payments - EduSys Pro{% endblock %}
+{% block page_title %}Bulk Verify Payments{% endblock %}
+{% block page_subtitle %}Verify multiple payments at once{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center space-x-3">
+    <a href="{% url 'admissions:application_list' %}" 
+       class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>Back to Applications
+    </a>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-bulk"></i>
-                        Bulk Payment Verification
-                    </h3>
+<div class="max-w-4xl mx-auto">
+    <!-- Instructions -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-start mb-4">
+            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-bolt text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Bulk Payment Verification</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Verify or unverify multiple payments at once by entering application numbers.
+                    Each application number should be on a new line.
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <h4 class="font-medium text-green-800 dark:text-green-300">Format Example</h4>
                 </div>
-                
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <h5><i class="icon fas fa-info"></i> Instructions</h5>
-                        <ul>
-                            <li>Enter application numbers, one per line</li>
-                            <li>Check the box to verify payments, uncheck to mark as unverified</li>
-                            <li>You will be recorded as the verifier for all updated applications</li>
-                        </ul>
-                    </div>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        {% for field in form %}
-                        <div class="form-group">
-                            {{ field.label_tag }}
-                            {{ field }}
-                            {% if field.errors %}
-                                <div class="text-danger">{{ field.errors }}</div>
-                            {% endif %}
-                            {% if field.help_text %}
-                                <small class="form-text text-muted">{{ field.help_text }}</small>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                        
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-check-double"></i> Process Bulk Update
-                            </button>
-                            <a href="{% url 'admissions:application_list' %}" class="btn btn-default">Cancel</a>
-                        </div>
-                    </form>
+                <pre class="text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 p-2 rounded"><code>APP-202401-0001
+APP-202401-0002
+APP-202401-0003</code></pre>
+            </div>
+            
+            <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    <h4 class="font-medium text-blue-800 dark:text-blue-300">Quick Tips</h4>
                 </div>
+                <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Copy from Excel/Google Sheets</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>One application per line</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-xs mt-1 mr-2"></i>
+                        <span>Invalid numbers will be skipped</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+
+    <!-- Bulk Verification Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+        <form method="post" id="bulkVerifyForm">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Application Numbers -->
+                <div>
+                    <label for="{{ form.app_numbers.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Application Numbers *
+                    </label>
+                    {{ form.app_numbers }}
+                    {% if form.app_numbers.help_text %}
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.app_numbers.help_text }}</p>
+                    {% endif %}
+                    {% if form.app_numbers.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.app_numbers.errors }}</div>
+                    {% endif %}
+                    
+                    <div class="mt-2 flex items-center justify-between">
+                        <span class="text-xs text-gray-500 dark:text-gray-400" id="appCount">0 applications</span>
+                        <button type="button" id="clearButton" class="text-xs text-red-600 dark:text-red-400 hover:underline">
+                            Clear all
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Verification Action -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        Verification Action *
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Verify -->
+                        <div class="verification-action">
+                            <input type="radio" name="payment_verified" id="bulk_verify" value="true" 
+                                   class="hidden peer" checked required>
+                            <label for="bulk_verify" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 hover:border-green-300 dark:hover:border-green-600 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800 dark:text-white">Verify Payments</h5>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                                            Mark all payments as verified
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- Unverify -->
+                        <div class="verification-action">
+                            <input type="radio" name="payment_verified" id="bulk_unverify" value="false" 
+                                   class="hidden peer">
+                            <label for="bulk_unverify" 
+                                   class="block p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                                        <i class="fas fa-times text-red-600 dark:text-red-400"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800 dark:text-white">Mark as Unverified</h5>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                                            Mark all payments as not verified
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    {% if form.payment_verified.errors %}
+                    <div class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.payment_verified.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+                            This action will affect all valid application numbers
+                        </div>
+                        <div class="flex space-x-3">
+                            <a href="{% url 'admissions:application_list' %}" 
+                               class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    id="submitButton"
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled>
+                                <i class="fas fa-bolt mr-2"></i>Process Bulk Verification
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Recent Bulk Operations -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mt-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Recent Bulk Operations</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Date
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Action
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Applications
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Performed By
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Example data - you should replace with actual data -->
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            15 Jan 2024
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                Verified
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 dark:text-white">
+                            12 applications
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            Admin User
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            14 Jan 2024
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                Unverified
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800 dark:text-white">
+                            3 applications
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            Staff User
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const appNumbersTextarea = document.getElementById('{{ form.app_numbers.id_for_label }}');
+    const appCountSpan = document.getElementById('appCount');
+    const clearButton = document.getElementById('clearButton');
+    const submitButton = document.getElementById('submitButton');
+    
+    // Update application count
+    function updateAppCount() {
+        const text = appNumbersTextarea.value.trim();
+        const apps = text.split('\n').filter(line => line.trim().length > 0);
+        const count = apps.length;
+        
+        appCountSpan.textContent = `${count} application${count !== 1 ? 's' : ''}`;
+        
+        // Enable/disable submit button
+        submitButton.disabled = count === 0;
+    }
+    
+    // Initialize count
+    updateAppCount();
+    
+    // Update count on input
+    appNumbersTextarea.addEventListener('input', updateAppCount);
+    
+    // Clear button
+    clearButton.addEventListener('click', function() {
+        if (appNumbersTextarea.value.trim() && confirm('Clear all application numbers?')) {
+            appNumbersTextarea.value = '';
+            updateAppCount();
+            appNumbersTextarea.focus();
+        }
+    });
+    
+    // Highlight selected verification action
+    document.querySelectorAll('.verification-action input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.verification-action label').forEach(label => {
+                label.classList.remove('ring-2', 'ring-offset-2');
+            });
+            if (this.checked) {
+                const label = this.nextElementSibling;
+                if (label) {
+                    if (this.value === 'true') {
+                        label.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+                    } else {
+                        label.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+                    }
+                }
+            }
+        });
+        
+        // Trigger change on page load if already checked
+        if (radio.checked) {
+            radio.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Form submission
+    const form = document.getElementById('bulkVerifyForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const text = appNumbersTextarea.value.trim();
+            const apps = text.split('\n').filter(line => line.trim().length > 0);
+            
+            if (apps.length === 0) {
+                e.preventDefault();
+                alert('Please enter at least one application number.');
+                appNumbersTextarea.focus();
+                return;
+            }
+            
+            const isVerifying = document.getElementById('bulk_verify').checked;
+            const action = isVerifying ? 'verify' : 'unverify';
+            const confirmMessage = `Are you sure you want to ${action.toUpperCase()} payments for ${apps.length} application(s)?\n\nThis action cannot be undone.`;
+            
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Disable button and show loading
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            submitButton.disabled = true;
+        });
+    }
+    
+    // Paste formatting helper
+    appNumbersTextarea.addEventListener('paste', function(e) {
+        setTimeout(function() {
+            // Clean up pasted text
+            let text = appNumbersTextarea.value;
+            // Remove extra spaces, keep only alphanumeric, dash, underscore
+            text = text.replace(/[^\w\s-]/g, ' ')
+                      .replace(/\s+/g, '\n')
+                      .split('\n')
+                      .filter(line => line.trim().length > 0)
+                      .map(line => line.trim())
+                      .join('\n');
+            appNumbersTextarea.value = text;
+            updateAppCount();
+        }, 0);
+    });
+});
+</script>
+
+<style>
+/* Form styling */
+#bulkVerifyForm textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #1f2937;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.dark #bulkVerifyForm textarea {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: #f3f4f6;
+}
+
+#bulkVerifyForm textarea:focus {
+    outline: none;
+    ring-width: 2px;
+    ring-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+/* Action styling */
+.verification-action label {
+    transition: all 0.2s ease;
+}
+
+.verification-action input:checked + label {
+    transform: scale(1.01);
+}
+</style>
+{% endblock %}
 {% endblock %}
